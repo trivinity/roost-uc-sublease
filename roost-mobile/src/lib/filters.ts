@@ -1,10 +1,19 @@
 // AUTO-COPIED from uc-sublease/lib/filters.ts by `npm run sync`. Edit the web version, not this file.
-import type { Filters, Listing, Neighborhood } from "./types";
+import type { Filters, Listing } from "./types";
 
-export const NEIGHBORHOODS: Neighborhood[] = ["Uptown", "Clifton", "Corryville", "Over-the-Rhine"];
 export const RENT_MIN = 300;
 export const RENT_MAX = 2000;
-export const DISTANCE_MAX = 3;
+
+// Distance filter: miles from the UC campus center. DISTANCE_ANY means no limit.
+export const DISTANCE_ANY = 999;
+export const DISTANCE_OPTIONS: { miles: number; label: string }[] = [
+  { miles: 1, label: "Walkable · 1 mi" },
+  { miles: 3, label: "3 mi" },
+  { miles: 5, label: "5 mi" },
+  { miles: 10, label: "10 mi" },
+  { miles: 20, label: "20 mi" },
+  { miles: DISTANCE_ANY, label: "Any" },
+];
 
 // Upcoming co-op terms. Edit freely; these only drive the filter presets.
 export const TERMS = [
@@ -18,20 +27,18 @@ export const DEFAULT_FILTERS: Filters = {
   maxRent: RENT_MAX,
   from: "",
   to: "",
-  neighborhoods: [],
   bedrooms: null,
   furnishedOnly: false,
-  maxDistance: DISTANCE_MAX,
+  maxDistance: DISTANCE_ANY,
 };
 
 export function activeFilterCount(f: Filters): number {
   return [
     f.minRent > RENT_MIN || f.maxRent < RENT_MAX,
     f.from !== "" || f.to !== "",
-    f.neighborhoods.length > 0,
     f.bedrooms !== null,
     f.furnishedOnly,
-    f.maxDistance < DISTANCE_MAX,
+    f.maxDistance < DISTANCE_ANY,
   ].filter(Boolean).length;
 }
 
@@ -41,10 +48,9 @@ export function filterListings(listings: Listing[], f: Filters): Listing[] {
     if (l.rent < f.minRent || l.rent > f.maxRent) return false;
     if (f.from && l.startDate > f.from) return false;
     if (f.to && l.endDate < f.to) return false;
-    if (f.neighborhoods.length && !f.neighborhoods.includes(l.neighborhood)) return false;
     if (f.bedrooms !== null && (f.bedrooms >= 4 ? l.bedrooms < 4 : l.bedrooms !== f.bedrooms)) return false;
     if (f.furnishedOnly && !l.furnished) return false;
-    if (f.maxDistance < DISTANCE_MAX && l.distanceMiles > f.maxDistance) return false;
+    if (f.maxDistance < DISTANCE_ANY && l.distanceMiles > f.maxDistance) return false;
     return true;
   });
 }

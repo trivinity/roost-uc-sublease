@@ -2,8 +2,8 @@ import { Ionicons } from "@expo/vector-icons";
 import type { ComponentProps, ReactNode } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View, type StyleProp, type TextStyle, type ViewStyle } from "react-native";
 import { haptic } from "@/lib/haptics";
-import { HOOD_COLORS, useColors } from "@/lib/theme";
-import type { Neighborhood } from "@/lib/types";
+import { distanceBand, fmtMiles } from "@/lib/format";
+import { BAND_COLORS, useColors } from "@/lib/theme";
 
 type IconName = ComponentProps<typeof Ionicons>["name"];
 
@@ -16,10 +16,15 @@ export function Pill({ children, bg, color, style }: { children: ReactNode; bg?:
   );
 }
 
-export function HoodPill({ hood }: { hood: Neighborhood }) {
+// Area name plus distance from UC, colored by how far it is.
+export function AreaPill({ area, miles }: { area: string; miles: number }) {
   const c = useColors();
-  const [bg, fg] = HOOD_COLORS[c.dark ? "dark" : "light"][hood];
-  return <Pill bg={bg} color={fg}>{hood}</Pill>;
+  const [bg, fg] = BAND_COLORS[c.dark ? "dark" : "light"][distanceBand(miles)];
+  return (
+    <Pill bg={bg} color={fg}>
+      {fmtMiles(miles)} · {area}
+    </Pill>
+  );
 }
 
 export function Freshness({ label, tone }: { label: string; tone: "good" | "ok" | "stale" }) {

@@ -2,11 +2,11 @@ import Slider from "@react-native-community/slider";
 import { Ionicons } from "@expo/vector-icons";
 import { Modal, Platform, Pressable, ScrollView, Switch, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { activeFilterCount, DEFAULT_FILTERS, DISTANCE_MAX, filterListings, NEIGHBORHOODS, RENT_MAX, RENT_MIN, TERMS } from "@/lib/filters";
+import { activeFilterCount, DEFAULT_FILTERS, DISTANCE_OPTIONS, filterListings, RENT_MAX, RENT_MIN, TERMS } from "@/lib/filters";
 import { fmtMoney } from "@/lib/format";
 import { useStore } from "@/lib/store";
 import { useColors } from "@/lib/theme";
-import type { Filters, Neighborhood } from "@/lib/types";
+import type { Filters } from "@/lib/types";
 import { Button, Chip } from "./ui";
 
 const BEDROOMS: { label: string; value: number | null }[] = [
@@ -38,9 +38,6 @@ export function FilterSheet({ visible, onClose }: { visible: boolean; onClose: (
   const count = activeFilterCount(filters);
   const matches = filterListings(listings, filters).length;
   const patch = (p: Partial<Filters>) => setFilters({ ...filters, ...p });
-  const toggleHood = (n: Neighborhood) =>
-    patch({ neighborhoods: filters.neighborhoods.includes(n) ? filters.neighborhoods.filter((x) => x !== n) : [...filters.neighborhoods, n] });
-
   return (
     <Modal visible={visible} animationType="slide" presentationStyle={Platform.OS === "ios" ? "pageSheet" : "fullScreen"} onRequestClose={onClose}>
       <SafeAreaView edges={["top", "bottom"]} style={{ flex: 1, backgroundColor: c.popover }}>
@@ -52,6 +49,14 @@ export function FilterSheet({ visible, onClose }: { visible: boolean; onClose: (
         </View>
 
         <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24 }}>
+          <Section title="Distance from UC" hint="Straight-line miles">
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+              {DISTANCE_OPTIONS.map((o) => (
+                <Chip key={o.miles} label={o.label} active={filters.maxDistance === o.miles} onPress={() => patch({ maxDistance: o.miles })} />
+              ))}
+            </View>
+          </Section>
+
           <Section title="Monthly rent" hint={`${fmtMoney(filters.minRent)} – ${fmtMoney(filters.maxRent)}${filters.maxRent >= RENT_MAX ? "+" : ""}`}>
             <Text style={{ fontSize: 12, color: c.muted }}>Minimum</Text>
             <Slider
@@ -86,14 +91,6 @@ export function FilterSheet({ visible, onClose }: { visible: boolean; onClose: (
             </View>
           </Section>
 
-          <Section title="Neighborhood" hint={filters.neighborhoods.length ? undefined : "All"}>
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-              {NEIGHBORHOODS.map((n) => (
-                <Chip key={n} label={n} active={filters.neighborhoods.includes(n)} onPress={() => toggleHood(n)} />
-              ))}
-            </View>
-          </Section>
-
           <Section title="Bedrooms in unit">
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
               {BEDROOMS.map((b) => (
@@ -109,18 +106,6 @@ export function FilterSheet({ visible, onClose }: { visible: boolean; onClose: (
             </View>
           </Section>
 
-          <Section title="Max distance to campus" hint={filters.maxDistance >= DISTANCE_MAX ? "Any" : `${filters.maxDistance} mi`}>
-            <Slider
-              accessibilityLabel="Maximum distance to campus"
-              minimumValue={0.25}
-              maximumValue={DISTANCE_MAX}
-              step={0.25}
-              value={filters.maxDistance}
-              minimumTrackTintColor={c.brand}
-              thumbTintColor={c.brand}
-              onSlidingComplete={(v) => patch({ maxDistance: v })}
-            />
-          </Section>
         </ScrollView>
 
         <View style={{ flexDirection: "row", gap: 12, paddingHorizontal: 20, paddingTop: 12, borderTopWidth: 1, borderTopColor: c.border }}>

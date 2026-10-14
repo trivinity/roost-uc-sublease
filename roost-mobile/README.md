@@ -51,3 +51,9 @@ scripts/sync-shared.mjs
 - Date entry on the Post screen is typed as `YYYY-MM-DD`, or filled with the Spring/Summer/Fall chips. The filter sheet uses the same term presets.
 - Not included, same as the web demo: payments, real auth, maps.
 - Photos are free Unsplash images used as placeholders.
+
+## Status of the new features (web first)
+
+Ported to the phone app: distance filter, List/Map toggle (native only), icon amenities, nearby stops, roommate fit on listings, rank by fit with Show all, sublet fee on listings and in compare.
+
+Not yet ported (web only): the roommate **preferences screen** (so there is no way to set preferences on the phone yet), address lookup and the fee-split slider on the Post screen (the phone Post screen still picks the nearest area), and the household ratings and amenity picker on Post.

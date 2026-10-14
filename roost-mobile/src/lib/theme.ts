@@ -1,5 +1,4 @@
 import { useColorScheme } from "react-native";
-import type { Neighborhood } from "./types";
 
 // Same palette as the web app: warm off-white in light mode, warm charcoal (not pure black) in dark mode.
 export const LIGHT = {
@@ -39,19 +38,19 @@ export function useColors(): Colors & { dark: boolean } {
   return { ...(dark ? DARK : LIGHT), dark };
 }
 
-// [background, text] per neighborhood
-export const HOOD_COLORS: Record<"light" | "dark", Record<Neighborhood, [string, string]>> = {
+// Distance bands from UC: [background, text]. Same colors as the web app.
+export const BAND_COLORS: Record<"light" | "dark", Record<"walk" | "near" | "ride" | "drive", [string, string]>> = {
   light: {
-    Uptown: ["#e0f2fe", "#075985"],
-    Clifton: ["#d1fae5", "#065f46"],
-    Corryville: ["#fef3c7", "#78350f"],
-    "Over-the-Rhine": ["#ede9fe", "#5b21b6"],
+    walk: ["#d1fae5", "#065f46"],
+    near: ["#e0f2fe", "#075985"],
+    ride: ["#fef3c7", "#78350f"],
+    drive: ["#ede9fe", "#5b21b6"],
   },
   dark: {
-    Uptown: ["rgba(56,189,248,0.15)", "#7dd3fc"],
-    Clifton: ["rgba(52,211,153,0.15)", "#6ee7b7"],
-    Corryville: ["rgba(251,191,36,0.15)", "#fcd34d"],
-    "Over-the-Rhine": ["rgba(167,139,250,0.15)", "#c4b5fd"],
+    walk: ["rgba(52,211,153,0.15)", "#6ee7b7"],
+    near: ["rgba(56,189,248,0.15)", "#7dd3fc"],
+    ride: ["rgba(251,191,36,0.15)", "#fcd34d"],
+    drive: ["rgba(167,139,250,0.15)", "#c4b5fd"],
   },
 };
 

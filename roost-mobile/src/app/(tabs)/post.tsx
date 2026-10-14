@@ -5,15 +5,23 @@ import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Switch, Text, Te
 import { Frame } from "@/components/TopBar";
 import { Button, Chip, H1, Muted } from "@/components/ui";
 import { COPY } from "@/lib/copy";
-import { NEIGHBORHOODS, TERMS } from "@/lib/filters";
+import { TERMS } from "@/lib/filters";
+import { milesFromUC } from "@/lib/geo";
 import { TRANSFER_LABEL, TRANSFER_SHORT } from "@/lib/format";
 import { haptic } from "@/lib/haptics";
 import { useStore } from "@/lib/store";
 import { useColors } from "@/lib/theme";
-import type { Listing, Neighborhood, TransferType, UnitType } from "@/lib/types";
+import type { Listing, TransferType, UnitType } from "@/lib/types";
 
-// Rough walking distance from each neighborhood's center to campus. A real version would geocode the address.
-const DISTANCE: Record<Neighborhood, number> = { Uptown: 0.4, Clifton: 0.7, Corryville: 0.6, "Over-the-Rhine": 2.1 };
+// Simple version for now: pick the nearest area (approximate center). The web app looks up the exact address.
+const AREAS: Record<string, { lat: number; lng: number }> = {
+  Uptown: { lat: 39.1315, lng: -84.5175 },
+  Clifton: { lat: 39.1412, lng: -84.5215 },
+  Corryville: { lat: 39.1345, lng: -84.5105 },
+  "Over-the-Rhine": { lat: 39.1125, lng: -84.5148 },
+  Northside: { lat: 39.1745, lng: -84.544 },
+  Norwood: { lat: 39.159, lng: -84.454 },
+};
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
@@ -32,7 +40,7 @@ export default function Post() {
   const { addListing, showToast } = useStore();
   const [title, setTitle] = useState("");
   const [address, setAddress] = useState("");
-  const [hood, setHood] = useState<Neighborhood>("Uptown");
+  const [hood, setHood] = useState<string>("Uptown");
   const [rent, setRent] = useState("");
   const [utilitiesIncluded, setUtilitiesIncluded] = useState(true);
   const [utilities, setUtilities] = useState("");
@@ -66,6 +74,10 @@ export default function Post() {
       title: title.trim(),
       address: address.trim(),
       neighborhood: hood,
+      lat: AREAS[hood].lat,
+      lng: AREAS[hood].lng,
+      subletFee: 0,
+      feeSplitPct: 0,
       rent: Number(rent),
       utilitiesIncluded,
       utilitiesEstimate: utilitiesIncluded ? 0 : Number(utilities),
@@ -75,7 +87,7 @@ export default function Post() {
       furnished,
       unitType,
       transferType: transfer,
-      distanceMiles: DISTANCE[hood],
+      distanceMiles: milesFromUC(AREAS[hood].lat, AREAS[hood].lng),
       description: description.trim() || "No description yet.",
       amenities: [],
       landlordConsent: true,
@@ -126,7 +138,7 @@ export default function Post() {
 
           <Field label="Neighborhood">
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-              {NEIGHBORHOODS.map((n) => (
+              {Object.keys(AREAS).map((n) => (
                 <Chip key={n} label={n} active={hood === n} onPress={() => setHood(n)} />
               ))}
             </View>

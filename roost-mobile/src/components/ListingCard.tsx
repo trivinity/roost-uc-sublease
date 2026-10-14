@@ -1,19 +1,23 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import { Pressable, Text, View, type LayoutChangeEvent } from "react-native";
-import { fmtMiles, fmtMoney, fmtRange } from "@/lib/format";
+import { fmtMoney, fmtRange } from "@/lib/format";
 import { priceInsight } from "@/lib/insights";
+import { matchFit } from "@/lib/roommates";
 import { useStore } from "@/lib/store";
 import { useColors } from "@/lib/theme";
 import type { Listing } from "@/lib/types";
+import { AmenityIcons } from "./AmenityIcons";
+import { MatchBadge } from "./MatchBadge";
 import { Photo } from "./Photo";
 import { SaveButton } from "./SaveButton";
-import { HoodPill, shadow } from "./ui";
+import { AreaPill, shadow } from "./ui";
 
 // The face of a deck card. Fills its parent, so the parent controls the size.
 export function ListingCard({ listing: l, interactive = false, onOpen }: { listing: Listing; interactive?: boolean; onOpen?: () => void }) {
   const c = useColors();
-  const { listings } = useStore();
+  const { listings, prefs } = useStore();
+  const fit = prefs ? matchFit(prefs, l.household) : null;
   const insight = priceInsight(l, listings);
   const [i, setI] = useState(0);
   const [w, setW] = useState(1);
@@ -43,6 +47,7 @@ export function ListingCard({ listing: l, interactive = false, onOpen }: { listi
           </View>
         )}
         <SaveButton id={l.id} style={{ position: "absolute", top: 28, right: 14 }} />
+        {fit && <MatchBadge score={fit.score} style={{ position: "absolute", bottom: 12, right: 14 }} />}
         {insight?.tone === "great" && (
           <View style={{ position: "absolute", bottom: 12, left: 14, backgroundColor: "#10b981", paddingHorizontal: 12, paddingVertical: 5, borderRadius: 99 }} pointerEvents="none">
             <Text style={{ color: "#fff", fontSize: 12, fontWeight: "700" }}>Great price</Text>
@@ -64,9 +69,9 @@ export function ListingCard({ listing: l, interactive = false, onOpen }: { listi
           </Text>
           <Ionicons name="chevron-forward" size={16} color={c.muted} />
         </View>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-          <HoodPill hood={l.neighborhood} />
-          <Text style={{ fontSize: 13, color: c.muted }}>{fmtMiles(l.distanceMiles)} to campus</Text>
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+          <AreaPill area={l.neighborhood} miles={l.distanceMiles} />
+          <AmenityIcons ids={l.amenities} max={4} size={30} interactive={false} />
         </View>
       </Pressable>
     </View>

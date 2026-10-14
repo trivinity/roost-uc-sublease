@@ -9,7 +9,7 @@ const web = join(here, "..", "..", "uc-sublease");
 const out = join(here, "..", "src", "lib");
 mkdirSync(out, { recursive: true });
 
-for (const f of ["types", "listings", "filters", "format", "copy", "insights", "config"]) {
+for (const f of ["types", "listings", "filters", "format", "copy", "insights", "config", "geo", "transit", "amenities", "roommates", "ranking"]) {
   const src = readFileSync(join(web, "lib", `${f}.ts`), "utf8");
   writeFileSync(join(out, `${f}.ts`), `// AUTO-COPIED from uc-sublease/lib/${f}.ts by \`npm run sync\`. Edit the web version, not this file.\n${src}`);
 }

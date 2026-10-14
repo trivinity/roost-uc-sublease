@@ -4,9 +4,12 @@ import { useState } from "react";
 import { FlatList, Modal, Pressable, ScrollView, Share, Text, useWindowDimensions, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Photo } from "@/components/Photo";
-import { Button, Card, EmptyState, Freshness, HoodPill, Muted } from "@/components/ui";
+import { AmenityIcons } from "@/components/AmenityIcons";
+import { GettingAround } from "@/components/GettingAround";
+import { RoommateFit } from "@/components/RoommateFit";
+import { AreaPill, Button, Card, EmptyState, Freshness, Muted } from "@/components/ui";
 import { COPY } from "@/lib/copy";
-import { bedroomLabel, fmtMiles, fmtMoney, fmtRange, freshness, monthsBetween, TRANSFER_LABEL, UNIT_LABEL } from "@/lib/format";
+import { bedroomLabel, feeSummary, fmtMiles, fmtMoney, fmtRange, freshness, monthsBetween, TRANSFER_LABEL, UNIT_LABEL } from "@/lib/format";
 import { haptic } from "@/lib/haptics";
 import { priceInsight } from "@/lib/insights";
 import { useStore } from "@/lib/store";
@@ -56,7 +59,8 @@ export default function ListingScreen() {
     ["Furnished", l.furnished ? "Yes" : "No"],
     ["Lease transfer", TRANSFER_LABEL[l.transferType]],
     ["Location", `${street}, ${l.neighborhood}`],
-    ["To campus", `${fmtMiles(l.distanceMiles)} from UC`],
+    ["From UC", `${fmtMiles(l.distanceMiles)} straight-line from campus`],
+    ["Sublet fee", feeSummary(l.subletFee, l.feeSplitPct)],
     ["Landlord consent", l.landlordConsent ? "Sublessor confirms their lease allows this" : "Not confirmed"],
   ];
 
@@ -107,10 +111,7 @@ export default function ListingScreen() {
             <Text style={{ fontSize: 18, fontWeight: "400", color: c.muted }}>/mo</Text>
           </Text>
           <Text style={{ fontSize: 18, fontWeight: "500", color: c.ink }}>{l.title}</Text>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-            <HoodPill hood={l.neighborhood} />
-            <Muted>{fmtMiles(l.distanceMiles)} to campus</Muted>
-          </View>
+          <AreaPill area={l.neighborhood} miles={l.distanceMiles} />
           {insight && (
             <View style={{ alignSelf: "flex-start", backgroundColor: insightBg, borderRadius: 99, paddingHorizontal: 12, paddingVertical: 5 }}>
               <Text style={{ color: insightFg, fontSize: 12, fontWeight: "500" }}>{insight.label}</Text>
@@ -136,12 +137,24 @@ export default function ListingScreen() {
             ))}
           </Card>
 
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
-            {l.amenities.map((a) => (
-              <View key={a} style={{ borderWidth: 1, borderColor: c.border, borderRadius: 99, paddingHorizontal: 12, paddingVertical: 5 }}>
-                <Text style={{ color: c.muted, fontSize: 13 }}>{a}</Text>
-              </View>
-            ))}
+          <View style={{ marginTop: 10 }}>
+            <AmenityIcons ids={l.amenities} />
+          </View>
+
+          <View style={{ gap: 14, marginTop: 10 }}>
+            <GettingAround listing={l} />
+            <RoommateFit listing={l} />
+            {l.propertyReviews && (
+              <Card style={{ padding: 16, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: c.ink, fontWeight: "600" }}>{l.propertyReviews.group}</Text>
+                  <Muted style={{ fontSize: 12 }}>Property group · reviews are from Google</Muted>
+                </View>
+                <Text style={{ color: c.ink, fontWeight: "500" }}>
+                  ★ {l.propertyReviews.rating.toFixed(1)} <Text style={{ color: c.muted, fontWeight: "400" }}>({l.propertyReviews.count})</Text>
+                </Text>
+              </Card>
+            )}
           </View>
 
           <Card style={{ flexDirection: "row", alignItems: "center", gap: 12, padding: 16, marginTop: 10 }}>

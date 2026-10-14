@@ -12,7 +12,9 @@ import { haptic } from "@/lib/haptics";
 import { useStore } from "@/lib/store";
 import { useColors } from "@/lib/theme";
 import type { Listing } from "@/lib/types";
+import { rankByFit } from "@/lib/ranking";
 import { FilterButton } from "./FilterButton";
+import { FitToggle } from "./FitToggle";
 import { ListingCard } from "./ListingCard";
 import { Button, EmptyState } from "./ui";
 
@@ -23,11 +25,13 @@ const THRESHOLD = 110;
 export function SwipeDeck() {
   const c = useColors();
   const { width } = useWindowDimensions();
-  const { listings, filters, setFilters, seen, markSeen, unmarkSeen, resetDeck, shortlist, save, unsave, startChat } = useStore();
+  const { listings, filters, setFilters, seen, markSeen, unmarkSeen, resetDeck, shortlist, save, unsave, startChat, prefs, showAll, setShowAll } = useStore();
   const [history, setHistory] = useState<{ id: string; saved: boolean }[]>([]);
   const [busy, setBusy] = useState(false);
 
-  const matches = useMemo(() => filterListings(listings, filters).filter((l) => l.sublessor.id !== "me"), [listings, filters]);
+  // Best roommate fit first (not newest first). Poor fits are hidden until "Show all".
+  const ranked = useMemo(() => rankByFit(filterListings(listings, filters).filter((l) => l.sublessor.id !== "me"), prefs, showAll), [listings, filters, prefs, showAll]);
+  const matches = ranked.listings;
   const queue = useMemo(() => matches.filter((l) => !seen.includes(l.id)), [matches, seen]);
   const top: Listing | undefined = queue[0];
   const next: Listing | undefined = queue[1];
@@ -107,6 +111,10 @@ export function SwipeDeck() {
         <FilterButton />
       </View>
 
+      <View style={{ paddingBottom: 10 }}>
+        <FitToggle hidden={ranked.hidden} />
+      </View>
+
       <View style={{ flex: 1 }}>
         {top ? (
           <>
@@ -133,8 +141,8 @@ export function SwipeDeck() {
           </>
         ) : (
           <EmptyState
-            title={matches.length > 0 ? COPY.empty.deckDone.title : COPY.empty.noMatches.title}
-            body={matches.length > 0 ? COPY.empty.deckDone.body : COPY.empty.noMatches.body}
+            title={matches.length > 0 ? COPY.empty.deckDone.title : ranked.hidden > 0 ? COPY.empty.weakFits.title : COPY.empty.noMatches.title}
+            body={matches.length > 0 ? COPY.empty.deckDone.body : ranked.hidden > 0 ? COPY.empty.weakFits.body(ranked.hidden) : COPY.empty.noMatches.body}
             action={
               matches.length > 0 ? (
                 <View style={{ flexDirection: "row", gap: 8 }}>
@@ -147,6 +155,8 @@ export function SwipeDeck() {
                   />
                   <Button title="Browse list" variant="outline" onPress={() => router.navigate("/browse")} />
                 </View>
+              ) : ranked.hidden > 0 ? (
+                <Button title="Show all" onPress={() => setShowAll(true)} />
               ) : (
                 <Button title="Clear filters" onPress={() => setFilters(DEFAULT_FILTERS)} />
               )

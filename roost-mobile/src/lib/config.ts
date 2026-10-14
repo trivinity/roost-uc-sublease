@@ -10,4 +10,4 @@ export type RightSwipeAction = "message" | "shortlist";
 export const RIGHT_SWIPE_ACTION: RightSwipeAction = "message";
 
 export const DEMO_CODE = "123456";
-export const UC_EMAIL_PATTERN = /^[^\s@]+@mail\.uc\.edu$/i;
+export const UC_EMAIL_PATTERN = /^[^\s@]+@(mail\.)?uc\.edu$/i;
