@@ -5,6 +5,7 @@ A clickable prototype for a senior design capstone: a swipe-based sublease marke
 | Folder | What it is |
 | --- | --- |
 | [`uc-sublease/`](uc-sublease) | The web app (Next.js App Router, TypeScript, Tailwind). See its README for screens, structure and the `RIGHT_SWIPE_ACTION` switch. |
+| [`roost-mobile/`](roost-mobile) | The native phone app (Expo / React Native). Test it on your phone with the Expo Go app. See its README. |
 | [`roost-video/`](roost-video) | The motion-graphics promo, built with [Remotion](https://www.remotion.dev). The finished video is `roost-video/out/roost-promo.mp4`. |
 
 ## Run the app
@@ -16,6 +17,14 @@ npm run dev        # http://localhost:3000
 ```
 
 Sign in with any `@mail.uc.edu` email and the demo code `123456`.
+
+## Run the phone app
+
+```bash
+cd roost-mobile
+npm install
+npx expo start     # scan the QR code with Expo Go
+```
 
 ## Render the video
 
