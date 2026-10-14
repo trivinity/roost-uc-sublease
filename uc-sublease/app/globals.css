@@ -1,0 +1,197 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-sans);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-brand: var(--brand);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  --background: oklch(0.993 0.004 80);
+  --foreground: oklch(0.2 0.02 20);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.575 0.225 25);
+  --brand: oklch(0.575 0.225 25); /* red used for text; lighter in dark mode for contrast */
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.966 0.014 60);
+  --muted-foreground: oklch(0.52 0.02 40);
+  --accent: oklch(0.955 0.03 25);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0.012 60);
+  --input: oklch(0.922 0.012 60);
+  --ring: oklch(0.65 0.18 25);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+.dark {
+  /* Warm charcoal, not pure black. Surfaces get lighter as they rise (Material-style elevation). */
+  --background: oklch(0.19 0.006 40);
+  --foreground: oklch(0.93 0.01 70);
+  --card: oklch(0.235 0.007 40);
+  --card-foreground: oklch(0.93 0.01 70);
+  --popover: oklch(0.26 0.008 40);
+  --popover-foreground: oklch(0.93 0.01 70);
+  --primary: oklch(0.58 0.21 25);
+  --primary-foreground: oklch(0.99 0 0);
+  --brand: oklch(0.72 0.15 25);
+  --secondary: oklch(0.28 0.008 40);
+  --secondary-foreground: oklch(0.93 0.01 70);
+  --muted: oklch(0.28 0.008 40);
+  --muted-foreground: oklch(0.72 0.012 60);
+  --accent: oklch(0.3 0.03 25);
+  --accent-foreground: oklch(0.93 0.01 70);
+  --destructive: oklch(0.7 0.19 22);
+  --border: oklch(1 0 0 / 9%);
+  --input: oklch(1 0 0 / 12%);
+  --ring: oklch(0.62 0.17 25);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}
+/* Two-thumb range slider used by the rent filter */
+.dual-range {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  pointer-events: none;
+}
+.dual-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  pointer-events: auto;
+  width: 24px;
+  height: 24px;
+  border-radius: 9999px;
+  background: #fff;
+  border: 1px solid rgb(0 0 0 / 0.15);
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.18);
+  cursor: grab;
+}
+.dual-range::-moz-range-thumb {
+  pointer-events: auto;
+  width: 24px;
+  height: 24px;
+  border-radius: 9999px;
+  background: #fff;
+  border: 1px solid rgb(0 0 0 / 0.15);
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.18);
+  cursor: grab;
+}
+.dual-range::-webkit-slider-runnable-track { background: transparent; }
+.dual-range::-moz-range-track { background: transparent; }
+
+html { scroll-behavior: auto; color-scheme: light; }
+html.dark { color-scheme: dark; }
+body { -webkit-font-smoothing: antialiased; }
+
+/* ---- premium details ---- */
+@keyframes pop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.35); }
+  100% { transform: scale(1); }
+}
+
+h1, h2 { letter-spacing: -0.022em; }
+.tabular { font-variant-numeric: tabular-nums; }
+
+/* Soft, layered shadows read as depth; in dark mode a hairline ring does the same job. */
+.shadow-lift {
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.04), 0 10px 30px -10px rgb(0 0 0 / 0.14);
+}
+.shadow-float {
+  box-shadow: 0 2px 4px rgb(0 0 0 / 0.04), 0 28px 56px -16px rgb(0 0 0 / 0.28);
+}
+.dark .shadow-lift,
+.dark .shadow-float {
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.06), 0 24px 48px -16px rgb(0 0 0 / 0.6);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Photo expand/shrink between a card or row and its detail page */
+::view-transition-group(listing-photo) {
+  animation-duration: 480ms;
+  animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+  overflow: clip;
+  border-radius: 24px;
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 260ms;
+}

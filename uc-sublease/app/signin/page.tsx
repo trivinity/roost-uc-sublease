@@ -1,0 +1,159 @@
+"use client";
+
+import { useState } from "react";
+import Image from "next/image";
+import { ArrowLeft, BadgeCheck, EyeOff, ShieldCheck } from "lucide-react";
+import { Credits } from "@/components/app-shell";
+import { ThemeToggle } from "@/components/theme";
+import { Button } from "@/components/ui/button";
+import { OtpInput, type OtpStatus } from "@/components/ui/otp-input";
+import { DEMO_CODE, UC_EMAIL_PATTERN } from "@/lib/config";
+import { useStore } from "@/lib/store";
+import { COPY } from "@/lib/copy";
+
+const TRUST = [
+  { icon: BadgeCheck, text: "Only verified UC students can join" },
+  { icon: ShieldCheck, text: "Every sublease needs landlord consent" },
+  { icon: EyeOff, text: "Contact info stays private until you share it" },
+];
+
+function Collage({ className }: { className?: string }) {
+  const shots = [
+    { src: "/photos/living-2.jpg", cls: "-rotate-6 translate-y-3" },
+    { src: "/photos/bedroom-1.jpg", cls: "z-10 scale-110" },
+    { src: "/photos/kitchen-4.jpg", cls: "rotate-6 translate-y-3" },
+  ];
+  return (
+    <div className={className} aria-hidden>
+      {shots.map((s) => (
+        <div key={s.src} className={`relative aspect-[3/4] w-full overflow-hidden rounded-2xl shadow-float ring-2 ring-white/70 ${s.cls}`}>
+          <Image src={s.src} alt="" fill sizes="200px" className="object-cover" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export default function SignInPage() {
+  const { signIn } = useStore();
+  const [email, setEmail] = useState("");
+  const [error, setError] = useState("");
+  const [step, setStep] = useState<"email" | "code">("email");
+  const [status, setStatus] = useState<OtpStatus>("idle");
+
+  const submitEmail = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!UC_EMAIL_PATTERN.test(email.trim())) {
+      setError(COPY.signin.notUc);
+      return;
+    }
+    setError("");
+    setStep("code");
+  };
+
+  const checkCode = (code: string) => {
+    if (code === DEMO_CODE) {
+      setStatus("success");
+      setTimeout(() => signIn(email.trim()), 800);
+    } else {
+      setStatus("error");
+    }
+  };
+
+  return (
+    <div className="relative min-h-dvh md:grid md:grid-cols-[1.05fr_1fr]">
+      <ThemeToggle className="absolute right-4 top-4 z-20" />
+
+      {/* Brand panel (desktop) */}
+      <aside className="relative hidden overflow-hidden bg-gradient-to-br from-[oklch(0.62_0.22_25)] via-[oklch(0.5_0.21_22)] to-[oklch(0.28_0.09_20)] p-12 text-white md:flex md:flex-col md:justify-between">
+        <p className="flex items-center gap-2 text-lg font-semibold tracking-tight">
+          <span className="size-3 rounded-full bg-white" aria-hidden /> Roost
+        </p>
+        <div className="space-y-10">
+          <Collage className="mx-auto grid max-w-md grid-cols-3 gap-4" />
+          <div className="space-y-5">
+            <h2 className="max-w-md text-4xl font-semibold leading-[1.1] tracking-tight">Find your next place, on your co-op schedule.</h2>
+            <ul className="space-y-2.5 text-[15px] text-white/85">
+              {TRUST.map(({ icon: Icon, text }) => (
+                <li key={text} className="flex items-center gap-2.5">
+                  <Icon className="size-[18px] shrink-0" /> {text}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+        <div aria-hidden className="pointer-events-none absolute -right-24 -top-24 size-80 rounded-full bg-white/10 blur-3xl" />
+      </aside>
+
+      <main className="flex min-h-dvh flex-col items-center justify-center px-6 py-12 md:min-h-0">
+        <div className="w-full max-w-sm space-y-8">
+          <div className="space-y-5 text-center md:text-left">
+            <Collage className="mx-auto grid w-52 grid-cols-3 gap-2 pb-4 md:hidden" />
+            <div className="space-y-2">
+              <p className="flex items-center justify-center gap-2 text-3xl font-semibold tracking-tight md:hidden">
+                <span className="size-3 rounded-full bg-primary" aria-hidden /> Roost
+              </p>
+              <h1 className="hidden text-3xl font-semibold tracking-tight md:block">Welcome back</h1>
+              <p className="text-muted-foreground">Verified student subleases near UC.</p>
+            </div>
+          </div>
+
+          {step === "email" ? (
+            <form onSubmit={submitEmail} className="space-y-4" noValidate>
+              <label className="block space-y-2 text-sm font-medium">
+                UC email
+                <input
+                  type="email"
+                  autoComplete="email"
+                  autoFocus
+                  placeholder="bearcat@mail.uc.edu"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    setError("");
+                  }}
+                  aria-invalid={!!error}
+                  className="h-12 w-full rounded-2xl border border-border bg-background px-4 text-base font-normal outline-none transition-shadow focus:border-primary focus:ring-4 focus:ring-primary/15 aria-invalid:border-destructive"
+                />
+              </label>
+              {error && <p className="text-sm text-destructive">{error}</p>}
+              <Button type="submit" size="lg" className="w-full">
+                Send code
+              </Button>
+            </form>
+          ) : (
+            <div className="space-y-6">
+              <div className="space-y-1 text-center md:text-left">
+                <p className="font-medium">Enter your 6-digit code</p>
+                <p className="text-sm text-muted-foreground">
+                  We “sent” it to {email.trim()}. Demo code: <span className="font-mono">{DEMO_CODE}</span>
+                </p>
+              </div>
+              <div className="flex justify-center md:justify-start">
+                <OtpInput length={6} size="md" autoFocus status={status} onChange={() => setStatus("idle")} onComplete={checkCode} />
+              </div>
+              <p className="h-5 text-center text-sm text-destructive md:text-left" aria-live="polite">
+                {status === "error" ? COPY.signin.wrongCode : ""}
+              </p>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setStep("email");
+                  setStatus("idle");
+                }}
+                className="mx-auto flex md:mx-0"
+              >
+                <ArrowLeft className="size-4" /> Use a different email
+              </Button>
+            </div>
+          )}
+
+          <p className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground md:justify-start">
+            <ShieldCheck className="size-3.5" /> Prototype only. No real accounts or emails are used.
+          </p>
+        </div>
+        <Credits />
+      </main>
+    </div>
+  );
+}
