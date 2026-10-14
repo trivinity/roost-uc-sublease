@@ -1,4 +1,4 @@
-import type { Neighborhood, TransferType, UnitType } from "./types";
+import type { TransferType, UnitType } from "./types";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -49,10 +49,30 @@ export function freshness(days: number): { label: string; tone: "good" | "ok" | 
   return { label: `Last confirmed ${when} — may be taken`, tone: "stale" };
 }
 
-// One soft color per neighborhood so the deck and list are easy to scan.
-export const HOOD_STYLE: Record<Neighborhood, string> = {
-  Uptown: "bg-sky-100 text-sky-800 dark:bg-sky-400/15 dark:text-sky-300",
-  Clifton: "bg-emerald-100 text-emerald-800 dark:bg-emerald-400/15 dark:text-emerald-300",
-  Corryville: "bg-amber-100 text-amber-900 dark:bg-amber-400/15 dark:text-amber-300",
-  "Over-the-Rhine": "bg-violet-100 text-violet-800 dark:bg-violet-400/15 dark:text-violet-300",
+// Distance bands from UC. Each gets its own soft color so cards are easy to scan.
+export type DistanceBand = "walk" | "near" | "ride" | "drive";
+export const distanceBand = (miles: number): DistanceBand => (miles <= 1 ? "walk" : miles <= 3 ? "near" : miles <= 6 ? "ride" : "drive");
+export const BAND_LABEL: Record<DistanceBand, string> = { walk: "Walkable", near: "Short ride", ride: "Bus or bike", drive: "Best with a car" };
+export const BAND_STYLE: Record<DistanceBand, string> = {
+  walk: "bg-emerald-100 text-emerald-800 dark:bg-emerald-400/15 dark:text-emerald-300",
+  near: "bg-sky-100 text-sky-800 dark:bg-sky-400/15 dark:text-sky-300",
+  ride: "bg-amber-100 text-amber-900 dark:bg-amber-400/15 dark:text-amber-300",
+  drive: "bg-violet-100 text-violet-800 dark:bg-violet-400/15 dark:text-violet-300",
 };
+
+export const fmtMoney0 = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`;
+
+// What the subletter pays and what the original tenant pays of a one-time sublet fee.
+export function feeShares(fee: number, subletterPct: number) {
+  const subletter = Math.round((fee * subletterPct) / 100);
+  return { subletter, tenant: fee - subletter };
+}
+
+// One-line summary of the sublet fee, from the subletter's point of view. Empty when there is no fee.
+export function feeSummary(fee: number, subletterPct: number): string {
+  if (fee <= 0) return "No sublet fee";
+  const { subletter } = feeShares(fee, subletterPct);
+  if (subletterPct === 0) return `${fmtMoney0(fee)} fee, paid by the current tenant`;
+  if (subletterPct === 100) return `${fmtMoney0(fee)} fee, you pay it all`;
+  return `${fmtMoney0(fee)} fee, you pay ${fmtMoney0(subletter)} (${subletterPct}%)`;
+}

@@ -3,12 +3,15 @@
 import Link from "next/link";
 import { BadgeCheck, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { bedroomLabel, fmtRange, freshness, monthsBetween, TRANSFER_SHORT, UNIT_LABEL } from "@/lib/format";
+import { bedroomLabel, feeSummary, fmtRange, freshness, monthsBetween, TRANSFER_SHORT, UNIT_LABEL } from "@/lib/format";
 import { priceInsight } from "@/lib/insights";
 import { useStore } from "@/lib/store";
 import type { Listing } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { AmenityIcons } from "./amenity-icons";
+import { GettingAround } from "./getting-around";
 import { Freshness } from "./pill";
+import { RoommateFit } from "./roommate-fit";
 
 // Wide screens only: the deck card is a phone-shaped column, so this panel uses the room beside it
 // to show the details of whichever listing is on top.
@@ -21,6 +24,7 @@ export function DeckDetails({ listing: l }: { listing: Listing }) {
     ["Length", `${monthsBetween(l.startDate, l.endDate)} months`],
     ["Unit", `${UNIT_LABEL[l.unitType]} · ${bedroomLabel(l.bedrooms)}`],
     ["Lease transfer", TRANSFER_SHORT[l.transferType]],
+    ["Sublet fee", feeSummary(l.subletFee, l.feeSplitPct)],
   ];
 
   return (
@@ -57,13 +61,11 @@ export function DeckDetails({ listing: l }: { listing: Listing }) {
           ))}
         </dl>
 
-        <div className="flex flex-wrap gap-2">
-          {l.amenities.map((a) => (
-            <span key={a} className="rounded-full border border-border px-3 py-1 text-sm text-muted-foreground">
-              {a}
-            </span>
-          ))}
-        </div>
+        <AmenityIcons ids={l.amenities} />
+
+        <GettingAround listing={l} />
+
+        <RoommateFit listing={l} />
 
         <div className="flex items-center gap-3 rounded-3xl border border-border bg-card p-4">
           <div className="grid size-11 place-items-center rounded-full bg-primary text-white">{l.sublessor.name.charAt(0)}</div>

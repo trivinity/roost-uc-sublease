@@ -3,14 +3,30 @@
 import { useState } from "react";
 import { SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { activeFilterCount, DEFAULT_FILTERS, DISTANCE_MAX, filterListings, NEIGHBORHOODS, RENT_MAX, RENT_MIN, TERMS } from "@/lib/filters";
+import {
+  activeFilterCount,
+  DEFAULT_FILTERS,
+  DISTANCE_OPTIONS,
+  filterListings,
+  RENT_MAX,
+  RENT_MIN,
+  TERMS,
+} from "@/lib/filters";
 import { fmtMoney } from "@/lib/format";
 import { useStore } from "@/lib/store";
-import type { Filters, Neighborhood } from "@/lib/types";
+import type { Filters } from "@/lib/types";
 import { Chip } from "./chip";
 import { Sheet } from "./sheet";
 
-function Section({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
+function Section({
+  title,
+  hint,
+  children,
+}: {
+  title: string;
+  hint?: string;
+  children: React.ReactNode;
+}) {
   return (
     <section className="space-y-3 border-b border-border py-5 first:pt-2 last:border-0">
       <div className="flex items-baseline justify-between">
@@ -22,7 +38,15 @@ function Section({ title, hint, children }: { title: string; hint?: string; chil
   );
 }
 
-function DualRange({ low, high, onChange }: { low: number; high: number; onChange: (low: number, high: number) => void }) {
+function DualRange({
+  low,
+  high,
+  onChange,
+}: {
+  low: number;
+  high: number;
+  onChange: (low: number, high: number) => void;
+}) {
   const step = 25;
   const pct = (v: number) => ((v - RENT_MIN) / (RENT_MAX - RENT_MIN)) * 100;
   return (
@@ -40,7 +64,9 @@ function DualRange({ low, high, onChange }: { low: number; high: number; onChang
         max={RENT_MAX}
         step={step}
         value={low}
-        onChange={(e) => onChange(Math.min(Number(e.target.value), high - step), high)}
+        onChange={(e) =>
+          onChange(Math.min(Number(e.target.value), high - step), high)
+        }
       />
       <input
         type="range"
@@ -50,7 +76,9 @@ function DualRange({ low, high, onChange }: { low: number; high: number; onChang
         max={RENT_MAX}
         step={step}
         value={high}
-        onChange={(e) => onChange(low, Math.max(Number(e.target.value), low + step))}
+        onChange={(e) =>
+          onChange(low, Math.max(Number(e.target.value), low + step))
+        }
       />
     </div>
   );
@@ -73,16 +101,13 @@ export function FilterButton() {
   const matches = filterListings(listings, filters).length;
   const patch = (p: Partial<Filters>) => setFilters({ ...filters, ...p });
 
-  const toggleHood = (n: Neighborhood) =>
-    patch({
-      neighborhoods: filters.neighborhoods.includes(n)
-        ? filters.neighborhoods.filter((x) => x !== n)
-        : [...filters.neighborhoods, n],
-    });
-
   return (
     <>
-      <Button variant="outline" onClick={() => setOpen(true)} aria-label="Open filters">
+      <Button
+        variant="outline"
+        onClick={() => setOpen(true)}
+        aria-label="Open filters"
+      >
         <SlidersHorizontal className="size-4" />
         Filters
         {count > 0 && (
@@ -98,7 +123,12 @@ export function FilterButton() {
         title="Filters"
         footer={
           <div className="flex gap-3">
-            <Button variant="ghost" size="lg" onClick={() => setFilters(DEFAULT_FILTERS)} disabled={count === 0}>
+            <Button
+              variant="ghost"
+              size="lg"
+              onClick={() => setFilters(DEFAULT_FILTERS)}
+              disabled={count === 0}
+            >
               Reset
             </Button>
             <Button size="lg" className="flex-1" onClick={() => setOpen(false)}>
@@ -107,11 +137,29 @@ export function FilterButton() {
           </div>
         }
       >
+        <Section title="Distance from UC" hint="Straight-line miles">
+          <div className="flex flex-wrap gap-2">
+            {DISTANCE_OPTIONS.map((o) => (
+              <Chip
+                key={o.miles}
+                active={filters.maxDistance === o.miles}
+                onClick={() => patch({ maxDistance: o.miles })}
+              >
+                {o.label}
+              </Chip>
+            ))}
+          </div>
+        </Section>
+
         <Section
           title="Monthly rent"
           hint={`${fmtMoney(filters.minRent)} – ${fmtMoney(filters.maxRent)}${filters.maxRent >= RENT_MAX ? "+" : ""}`}
         >
-          <DualRange low={filters.minRent} high={filters.maxRent} onChange={(minRent, maxRent) => patch({ minRent, maxRent })} />
+          <DualRange
+            low={filters.minRent}
+            high={filters.maxRent}
+            onChange={(minRent, maxRent) => patch({ minRent, maxRent })}
+          />
         </Section>
 
         <Section title="Available dates" hint="Covers your whole stay">
@@ -122,10 +170,24 @@ export function FilterButton() {
                 <Chip
                   key={t.id}
                   active={active}
-                  onClick={() => patch(active ? { from: "", to: "" } : { from: t.from, to: t.to })}
+                  onClick={() =>
+                    patch(
+                      active
+                        ? { from: "", to: "" }
+                        : { from: t.from, to: t.to },
+                    )
+                  }
                 >
                   {t.label}
-                  <span className={active ? "ml-1.5 text-white/70" : "ml-1.5 text-muted-foreground"}>{t.hint}</span>
+                  <span
+                    className={
+                      active
+                        ? "ml-1.5 text-white/70"
+                        : "ml-1.5 text-muted-foreground"
+                    }
+                  >
+                    {t.hint}
+                  </span>
                 </Chip>
               );
             })}
@@ -152,20 +214,14 @@ export function FilterButton() {
           </div>
         </Section>
 
-        <Section title="Neighborhood" hint={filters.neighborhoods.length ? undefined : "All"}>
-          <div className="flex flex-wrap gap-2">
-            {NEIGHBORHOODS.map((n) => (
-              <Chip key={n} active={filters.neighborhoods.includes(n)} onClick={() => toggleHood(n)}>
-                {n}
-              </Chip>
-            ))}
-          </div>
-        </Section>
-
         <Section title="Bedrooms in unit">
           <div className="flex flex-wrap gap-2">
             {BEDROOMS.map((b) => (
-              <Chip key={b.label} active={filters.bedrooms === b.value} onClick={() => patch({ bedrooms: b.value })}>
+              <Chip
+                key={b.label}
+                active={filters.bedrooms === b.value}
+                onClick={() => patch({ bedrooms: b.value })}
+              >
                 {b.label}
               </Chip>
             ))}
@@ -183,22 +239,6 @@ export function FilterButton() {
               className="relative h-7 w-12 shrink-0 cursor-pointer appearance-none rounded-full bg-neutral-300 dark:bg-neutral-600 transition-colors before:absolute before:left-0.5 before:top-0.5 before:size-6 before:rounded-full before:bg-white before:shadow before:transition-transform checked:bg-primary dark:checked:bg-primary checked:before:translate-x-5"
             />
           </label>
-        </Section>
-
-        <Section
-          title="Max distance to campus"
-          hint={filters.maxDistance >= DISTANCE_MAX ? "Any" : `${filters.maxDistance.toFixed(2).replace(/0$/, "")} mi`}
-        >
-          <input
-            type="range"
-            aria-label="Maximum distance to campus"
-            min={0.25}
-            max={DISTANCE_MAX}
-            step={0.25}
-            value={filters.maxDistance}
-            onChange={(e) => patch({ maxDistance: Number(e.target.value) })}
-            className="w-full accent-primary"
-          />
         </Section>
       </Sheet>
     </>

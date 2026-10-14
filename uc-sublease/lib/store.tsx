@@ -3,11 +3,12 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { DEFAULT_FILTERS } from "./filters";
 import { LISTINGS, SEED_THREADS } from "./listings";
-import type { Filters, Listing, Message, Thread, User } from "./types";
+import { DEFAULT_PREFS } from "./roommates";
+import type { Filters, Listing, Message, Prefs, Thread, User } from "./types";
 import { COPY } from "./copy";
 
 // Everything lives in React state and is mirrored to localStorage so a refresh doesn't wipe the demo.
-const STORAGE_KEY = "roost-demo-v1";
+const STORAGE_KEY = "roost-demo-v2"; // v2: distance search + roommate preferences
 
 interface Persisted {
   user: User | null;
@@ -18,6 +19,9 @@ interface Persisted {
   threads: Thread[];
   reported: string[];
   onboarded?: boolean;
+  prefs?: Prefs | null;
+  prefsAsked?: boolean;
+  showAll?: boolean;
 }
 
 const REPLIES = [
@@ -66,6 +70,14 @@ interface Store {
   onboarded: boolean;
   finishOnboarding: () => void;
 
+  // roommate preferences: null until the student fills them in; prefsAsked is set once they answered or skipped
+  prefs: Prefs | null;
+  prefsAsked: boolean;
+  savePrefs: (p: Prefs) => void;
+  skipPrefs: () => void;
+  showAll: boolean; // true = also show listings that are a poor roommate fit
+  setShowAll: (v: boolean) => void;
+
   toast: string | null;
   showToast: (msg: string) => void;
 }
@@ -88,6 +100,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [threads, setThreads] = useState<Thread[]>(SEED_THREADS);
   const [reported, setReported] = useState<string[]>([]);
   const [onboarded, setOnboarded] = useState(false);
+  const [prefs, setPrefs] = useState<Prefs | null>(null);
+  const [prefsAsked, setPrefsAsked] = useState(false);
+  const [showAll, setShowAll] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [typingThread, setTypingThread] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -101,12 +116,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         const p = JSON.parse(raw) as Persisted;
         setUser(p.user);
         setPosted(p.posted);
-        setFilters(p.filters);
+        setFilters({ ...DEFAULT_FILTERS, ...p.filters });
         setSeen(p.seen);
         setShortlist(p.shortlist);
         setThreads(p.threads);
         setReported(p.reported);
         setOnboarded(p.onboarded ?? false);
+        setPrefs(p.prefs ? { ...DEFAULT_PREFS, ...p.prefs } : null);
+        setPrefsAsked(p.prefsAsked ?? false);
+        setShowAll(p.showAll ?? false);
       }
     } catch {
       // ignore corrupt or unavailable storage
@@ -117,13 +135,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!ready) return;
-    const data: Persisted = { user, posted, filters, seen, shortlist, threads, reported, onboarded };
+    const data: Persisted = { user, posted, filters, seen, shortlist, threads, reported, onboarded, prefs, prefsAsked, showAll };
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     } catch {
       // storage full or blocked; the demo still works from memory
     }
-  }, [ready, user, posted, filters, seen, shortlist, threads, reported, onboarded]);
+  }, [ready, user, posted, filters, seen, shortlist, threads, reported, onboarded, prefs, prefsAsked, showAll]);
 
   const listings = useMemo(() => [...posted, ...LISTINGS], [posted]);
 
@@ -229,6 +247,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
     onboarded,
     finishOnboarding: () => setOnboarded(true),
+
+    prefs,
+    prefsAsked,
+    savePrefs: (p) => {
+      setPrefs(p);
+      setPrefsAsked(true);
+      showToast(COPY.toast.prefsSaved);
+    },
+    skipPrefs: () => setPrefsAsked(true),
+    showAll,
+    setShowAll,
 
     toast,
     showToast,

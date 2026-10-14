@@ -1,4 +1,5 @@
-export type Neighborhood = "Clifton" | "Uptown" | "Corryville" | "Over-the-Rhine";
+// Free-form area label shown to students (e.g. "Clifton", "Norwood"). Search is by distance, not by area.
+export type Area = string;
 export type UnitType = "room" | "whole";
 export type TransferType = "sublease" | "assignment" | "relet";
 
@@ -8,11 +9,37 @@ export interface Sublessor {
   detail: string; // e.g. "Mechanical Eng · 4th year"
 }
 
+export type AmenityId =
+  | "laundry" | "wifi" | "bed" | "parking" | "utilities" | "elevator" | "security" | "gym"
+  | "dishwasher" | "ac" | "bike" | "rooftop" | "outdoor" | "pets" | "kitchen";
+
+// How the existing roommates describe their home (rooms only). Scales are 1 (low) to 5 (high), social and guests 1 to 4.
+export interface Household {
+  roommates: number; // how many other people live there
+  cleanliness: number;
+  noise: number;
+  social: number;
+  guests: number;
+  sleep: number; // 1 early bird ... 5 night owl
+  approachability: number;
+  smokeFree: boolean;
+  cat: boolean;
+  dog: boolean;
+}
+
+export interface PropertyReviews {
+  group: string; // property management group
+  rating: number;
+  count: number;
+}
+
 export interface Listing {
   id: string;
   title: string;
   address: string;
-  neighborhood: Neighborhood;
+  neighborhood: Area; // display label only
+  lat: number;
+  lng: number;
   rent: number; // per month
   utilitiesIncluded: boolean;
   utilitiesEstimate: number; // per month, 0 if included
@@ -22,9 +49,13 @@ export interface Listing {
   furnished: boolean;
   unitType: UnitType;
   transferType: TransferType;
-  distanceMiles: number;
+  distanceMiles: number; // straight-line miles from the UC campus center, computed from lat/lng
   description: string;
-  amenities: string[];
+  amenities: AmenityId[];
+  subletFee: number; // one-time fee the landlord charges for the sublease, 0 = none
+  feeSplitPct: number; // share of that fee the subletter covers (0 to 100)
+  household?: Household; // rooms only
+  propertyReviews?: PropertyReviews;
   landlordConsent: boolean;
   confirmedDaysAgo: number;
   photos: string[]; // image paths under /public
@@ -57,8 +88,27 @@ export interface Filters {
   maxRent: number;
   from: string; // ISO or ""
   to: string;
-  neighborhoods: Neighborhood[]; // empty = all
   bedrooms: number | null; // null = any, 4 = "4+"
   furnishedOnly: boolean;
-  maxDistance: number; // miles, >= DISTANCE_MAX means any
+  maxDistance: number; // miles from UC, >= DISTANCE_ANY means any
+}
+
+// What a student is looking for in roommates ("want") and how they describe themselves ("me").
+export interface Traits {
+  cleanliness: number;
+  noise: number;
+  social: number;
+  guests: number;
+  sleep: number;
+  approachability: number;
+}
+
+export interface Prefs {
+  want: Traits;
+  me: Traits;
+  wantSmokeFree: boolean;
+  okCats: boolean;
+  okDogs: boolean;
+  hasCat: boolean;
+  hasDog: boolean;
 }

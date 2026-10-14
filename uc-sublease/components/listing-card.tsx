@@ -1,17 +1,21 @@
 import { useState } from "react";
 import { ChevronRight, Sofa } from "lucide-react";
 import type { Listing } from "@/lib/types";
-import { fmtMiles, fmtMoney, fmtRange, HOOD_STYLE } from "@/lib/format";
+import { fmtMoney, fmtRange } from "@/lib/format";
+import { matchFit } from "@/lib/roommates";
 import { priceInsight } from "@/lib/insights";
 import { PHOTO_VT } from "@/lib/transition";
 import { useStore } from "@/lib/store";
-import { cn } from "@/lib/utils";
+import { AmenityIcons } from "./amenity-icons";
+import { AreaPill } from "./area-pill";
+import { MatchBadge } from "./match-badge";
 import { Photo } from "./photo";
 import { SaveButton } from "./save-button";
 
 // The face of a deck card. Fills its parent, so the parent controls the size.
 export function ListingCard({ listing: l, interactive = false, preview = false }: { listing: Listing; interactive?: boolean; preview?: boolean }) {
-  const { listings } = useStore();
+  const { listings, prefs } = useStore();
+  const fit = prefs && !preview ? matchFit(prefs, l.household) : null;
   const insight = priceInsight(l, listings);
   const [i, setI] = useState(0);
   const last = l.photos.length - 1;
@@ -38,6 +42,7 @@ export function ListingCard({ listing: l, interactive = false, preview = false }
           </span>
         )}
         {!preview && <SaveButton id={l.id} className="absolute right-3 top-8" />}
+        {fit && <MatchBadge score={fit.score} className="absolute bottom-3 right-3 shadow-sm" />}
         {insight?.tone === "great" && (
           <span className="absolute bottom-3 left-3 rounded-full bg-emerald-500 px-2.5 py-1 text-xs font-semibold text-white shadow-sm">
             Great price
@@ -56,10 +61,10 @@ export function ListingCard({ listing: l, interactive = false, preview = false }
           <span className="truncate">{l.title}</span>
           <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
         </p>
-        <p className="flex items-center gap-2 text-sm text-muted-foreground">
-          <span className={cn("rounded-full px-2.5 py-0.5 text-xs font-medium", HOOD_STYLE[l.neighborhood])}>{l.neighborhood}</span>
-          {fmtMiles(l.distanceMiles)} to campus
-        </p>
+        <div className="flex items-center justify-between gap-3 pt-0.5">
+          <AreaPill area={l.neighborhood} miles={l.distanceMiles} />
+          <AmenityIcons ids={l.amenities} max={4} size="sm" interactive={false} className="flex-nowrap gap-1.5" />
+        </div>
       </div>
     </div>
   );

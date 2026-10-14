@@ -195,3 +195,36 @@ h1, h2 { letter-spacing: -0.022em; }
 ::view-transition-new(root) {
   animation-duration: 260ms;
 }
+
+/* ---- map ---- */
+.map-pin {
+  transform: translate(-50%, -100%);
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #fff;
+  color: #2a1f1d;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+.map-pin-uc {
+  background: #d0312d;
+  color: #fff;
+  border-color: #d0312d;
+}
+.leaflet-container {
+  font-family: inherit;
+}
+.dark .roost-map .leaflet-tile-pane {
+  filter: invert(1) hue-rotate(180deg) brightness(0.92) contrast(0.9);
+}
+.dark .leaflet-popup-content-wrapper,
+.dark .leaflet-popup-tip {
+  background: var(--popover);
+  color: var(--popover-foreground);
+}
+.leaflet-popup-content a {
+  color: inherit;
+}

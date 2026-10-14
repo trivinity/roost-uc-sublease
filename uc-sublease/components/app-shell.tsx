@@ -7,6 +7,7 @@ import { motion } from "motion/react";
 import { Bookmark, Layers, LayoutList, MessageCircle, Plus } from "lucide-react";
 import { NotificationBell } from "@/components/ui/notification-bell";
 import { ThemeSegment, ThemeToggle } from "@/components/theme";
+import { PrefsPrompt } from "@/components/prefs-prompt";
 import { Welcome } from "@/components/welcome";
 import { useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
@@ -22,7 +23,7 @@ const NAV = [
 const isActive = (path: string, href: string) => (href === "/" ? path === "/" : path === href || path.startsWith(`${href}/`));
 
 export function AppShell({ children }: { children: ReactNode }) {
-  const { ready, user, signOut, unreadCount, toast, onboarded } = useStore();
+  const { ready, user, signOut, unreadCount, toast, onboarded, prefsAsked } = useStore();
   const pathname = usePathname();
   const router = useRouter();
   const [menu, setMenu] = useState(false);
@@ -103,6 +104,13 @@ export function AppShell({ children }: { children: ReactNode }) {
                   <ThemeSegment />
                 </div>
                 <Link
+                  href="/preferences"
+                  onClick={() => setMenu(false)}
+                  className="block w-full rounded-xl px-3 py-2 text-left text-sm hover:bg-muted"
+                >
+                  Roommate preferences
+                </Link>
+                <Link
                   href="/mine"
                   onClick={() => setMenu(false)}
                   className="block w-full rounded-xl px-3 py-2 text-left text-sm hover:bg-muted"
@@ -159,6 +167,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </nav>
 
       {!onboarded && <Welcome />}
+      {onboarded && !prefsAsked && <PrefsPrompt />}
 
       <div
         role="status"

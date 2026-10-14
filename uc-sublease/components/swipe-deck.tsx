@@ -12,7 +12,9 @@ import { useStore } from "@/lib/store";
 import type { Listing } from "@/lib/types";
 import { withPhotoTransition } from "@/lib/transition";
 import { haptic } from "@/lib/utils";
+import { rankByFit } from "@/lib/ranking";
 import { FilterButton } from "./filter-button";
+import { FitToggle } from "./fit-toggle";
 import { DeckDetails } from "./deck-details";
 import { ListingCard } from "./listing-card";
 import { COPY } from "@/lib/copy";
@@ -34,15 +36,26 @@ export function SwipeDeck() {
     save,
     unsave,
     startChat,
+    prefs,
+    showAll,
+    setShowAll,
   } = useStore();
   const [history, setHistory] = useState<{ id: string; saved: boolean }[]>([]);
   const [busy, setBusy] = useState(false);
 
-  const matches = useMemo(
+  // Best roommate fit first (not newest first). Poor fits are hidden until "Show all".
+  const ranked = useMemo(
     () =>
-      filterListings(listings, filters).filter((l) => l.sublessor.id !== "me"),
-    [listings, filters],
+      rankByFit(
+        filterListings(listings, filters).filter(
+          (l) => l.sublessor.id !== "me",
+        ),
+        prefs,
+        showAll,
+      ),
+    [listings, filters, prefs, showAll],
   );
+  const matches = ranked.listings;
   const queue = useMemo(
     () => matches.filter((l) => !seen.includes(l.id)),
     [matches, seen],
@@ -123,6 +136,7 @@ export function SwipeDeck() {
             </p>
             <FilterButton />
           </div>
+          <FitToggle hidden={ranked.hidden} className="mb-3 self-start" />
 
           <div className="relative min-h-0 flex-1">
             {top ? (
@@ -160,7 +174,9 @@ export function SwipeDeck() {
                       info.point.y - window.scrollY,
                     );
                     if (hit?.closest("button, [data-photo]")) return;
-                    withPhotoTransition(() => router.push(`/listing/${top.id}`));
+                    withPhotoTransition(() =>
+                      router.push(`/listing/${top.id}`),
+                    );
                   }}
                   className="absolute inset-0 cursor-grab touch-pan-y active:cursor-grabbing"
                 >
@@ -182,6 +198,8 @@ export function SwipeDeck() {
             ) : (
               <EmptyState
                 hasMatches={matches.length > 0}
+                hiddenByFit={ranked.hidden}
+                onShowAll={() => setShowAll(true)}
                 onResetDeck={() => {
                   resetDeck();
                   setHistory([]);
@@ -239,10 +257,14 @@ export function SwipeDeck() {
 
 function EmptyState({
   hasMatches,
+  hiddenByFit,
+  onShowAll,
   onResetDeck,
   onResetFilters,
 }: {
   hasMatches: boolean;
+  hiddenByFit: number;
+  onShowAll: () => void;
   onResetDeck: () => void;
   onResetFilters: () => void;
 }) {
@@ -251,12 +273,16 @@ function EmptyState({
       <p className="text-lg font-semibold tracking-tight">
         {hasMatches
           ? COPY.empty.deckDone.title
-          : COPY.empty.noMatches.title}
+          : hiddenByFit > 0
+            ? COPY.empty.weakFits.title
+            : COPY.empty.noMatches.title}
       </p>
       <p className="text-sm text-muted-foreground">
         {hasMatches
           ? COPY.empty.deckDone.body
-          : COPY.empty.noMatches.body}
+          : hiddenByFit > 0
+            ? COPY.empty.weakFits.body(hiddenByFit)
+            : COPY.empty.noMatches.body}
       </p>
       <div className="flex gap-2">
         {hasMatches ? (
@@ -270,6 +296,8 @@ function EmptyState({
               Browse list
             </Button>
           </>
+        ) : hiddenByFit > 0 ? (
+          <Button onClick={onShowAll}>Show all</Button>
         ) : (
           <Button onClick={onResetFilters}>Clear filters</Button>
         )}

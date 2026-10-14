@@ -38,7 +38,7 @@ The button label, swipe stamp and behavior all follow the constant. The shortlis
 | `/post` | Post a listing; the subletting/landlord-consent checkbox is required |
 | `/messages`, `/messages/[id]` | Fake threads. Contact info stays hidden until you choose to share |
 
-Filters (rent range, dates with Spring/Summer/Fall presets, neighborhood, bedrooms, furnished, max distance) are opened from the Filters button on `/` and `/list`. The date filter matches listings that cover your **whole** range. Term dates are in `lib/filters.ts`.
+Filters (distance from UC, rent range, dates with Spring/Summer/Fall presets, bedrooms, furnished) are opened from the Filters button on `/` and `/list`. The date filter matches listings that cover your **whole** range. Term dates are in `lib/filters.ts`.
 
 ## Folder structure
 
@@ -75,3 +75,16 @@ lib/
 - Copy: every toast, form error and empty state lives in `lib/copy.ts` so the voice stays consistent.
 - Theme: warm background with a red accent (`--primary` in `app/globals.css`) and one soft color per neighborhood (`HOOD_STYLE` in `lib/format.ts`).
 - Out of scope by design: payments/escrow, protected-characteristic filters, real auth, maps, native apps.
+
+## Distance, map and nearby stops
+
+- Every listing has coordinates (`lat`/`lng`). Distance is the straight-line miles from the UC campus center (`UC_CENTER` in `lib/geo.ts`) and is always computed, never typed.
+- When posting, the address is looked up through `app/api/geocode/route.ts` (OpenStreetMap Nominatim, free, no API key). Swap that one file for Google or Mapbox if you want autocomplete.
+- Browse has a List / Map toggle (Leaflet with OpenStreetMap tiles, no key).
+- **Nearby stops are sample data.** Replace `SHUTTLE_STOPS` and `BUS_STOPS` in `lib/transit.ts` with the real UC shuttle (TripShot) and Metro stops; nothing else changes.
+
+## Roommates, amenities and fees
+
+- Roommate preferences use rating scales and checkboxes only (`lib/roommates.ts`). Students set them after the welcome slides (and later at `/preferences`); each room listing carries its household's ratings. `lib/ranking.ts` ranks by fit and hides poor fits until **Show all**.
+- Amenities are icon-only chips with a hover/tap label (`components/amenity-icons.tsx`, labels in `lib/amenities.ts`).
+- The sublet fee and who pays what is set on the post form after the landlord-consent box is ticked, and shows on listings and in compare.
