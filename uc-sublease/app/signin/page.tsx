@@ -65,15 +65,16 @@ export default function SignInPage() {
       <ThemeToggle className="absolute right-4 top-4 z-20" />
 
       {/* Brand panel (desktop) */}
-      <aside className="relative hidden overflow-hidden bg-gradient-to-br from-[oklch(0.62_0.22_25)] via-[oklch(0.5_0.21_22)] to-[oklch(0.28_0.09_20)] p-12 text-white md:flex md:flex-col md:justify-between">
+      <aside className="relative hidden overflow-hidden bg-gradient-to-br from-[oklch(0.62_0.22_25)] via-[oklch(0.5_0.21_22)] to-[oklch(0.28_0.09_20)] p-12 text-white md:flex md:flex-col">
         <p className="flex items-center gap-2 text-lg font-semibold tracking-tight">
           <span className="size-3 rounded-full bg-white" aria-hidden /> Roost
         </p>
-        <div className="space-y-10">
-          <Collage className="mx-auto grid max-w-md grid-cols-3 gap-4" />
-          <div className="space-y-5">
-            <h2 className="max-w-md text-4xl font-semibold leading-[1.1] tracking-tight">Find your next place, on your co-op schedule.</h2>
-            <ul className="space-y-2.5 text-[15px] text-white/85">
+        {/* centered in the space under the logo, so tall screens never leave a big empty band */}
+        <div className="flex flex-1 flex-col justify-center gap-12 py-8">
+          <Collage className="mx-auto grid w-full max-w-lg grid-cols-3 gap-5" />
+          <div className="mx-auto w-full max-w-lg space-y-6">
+            <h2 className="max-w-md text-4xl font-semibold leading-[1.1] xl:text-5xl tracking-tight">Find your next place, on your co-op schedule.</h2>
+            <ul className="space-y-3 text-base text-white/85">
               {TRUST.map(({ icon: Icon, text }) => (
                 <li key={text} className="flex items-center gap-2.5">
                   <Icon className="size-[18px] shrink-0" /> {text}
@@ -82,7 +83,8 @@ export default function SignInPage() {
             </ul>
           </div>
         </div>
-        <div aria-hidden className="pointer-events-none absolute -right-24 -top-24 size-80 rounded-full bg-white/10 blur-3xl" />
+        <div aria-hidden className="pointer-events-none absolute -right-24 -top-24 size-96 rounded-full bg-white/10 blur-3xl" />
+        <div aria-hidden className="pointer-events-none absolute -bottom-32 -left-20 size-96 rounded-full bg-amber-300/15 blur-3xl" />
       </aside>
 
       <main className="flex min-h-dvh flex-col items-center justify-center px-6 py-12 md:min-h-0">
