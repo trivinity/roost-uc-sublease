@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AddressField, type Place } from "@/components/address-field";
+import { CompanyField } from "@/components/company-field";
+import type { Company } from "@/lib/places";
 import { AMENITY_ICONS } from "@/components/amenity-icons";
 import { Chip } from "@/components/chip";
 import { ListingCard } from "@/components/listing-card";
@@ -114,6 +116,7 @@ export default function PostPage() {
   const [household, setHousehold] = useState<Household>(DEFAULT_HOUSEHOLD);
   const [description, setDescription] = useState("");
   const [uploads, setUploads] = useState<ProcessedPhoto[]>([]);
+  const [company, setCompany] = useState<Company | null>(null);
   const [consent, setConsent] = useState(false);
   const [fee, setFee] = useState("");
   const [coverPct, setCoverPct] = useState(50); // share of the sublet fee the current tenant (you) will cover
@@ -154,6 +157,8 @@ export default function PostPage() {
     subletFee: consent ? feeNum : 0,
     feeSplitPct: subletterPct,
     household: unitType === "room" ? household : undefined,
+    googlePlaceId: company?.id,
+    propertyGroup: company?.name,
     landlordConsent: true,
     confirmedDaysAgo: 0,
     photos: uploads.length
@@ -462,6 +467,12 @@ export default function PostPage() {
             className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-base outline-none focus:border-primary"
           />
         </Field>
+
+        <div className="space-y-1.5">
+          <p className="text-sm font-medium">Property management company (optional)</p>
+          <p className="text-xs text-muted-foreground">If a company manages the building, add it so students see its Google star rating on your listing.</p>
+          <CompanyField value={company} onChange={setCompany} />
+        </div>
 
         <div className="space-y-3">
           <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-border p-4 text-sm">

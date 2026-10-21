@@ -55,7 +55,9 @@ export interface Listing {
   subletFee: number; // one-time fee the landlord charges for the sublease, 0 = none
   feeSplitPct: number; // share of that fee the subletter covers (0 to 100)
   household?: Household; // rooms only
-  propertyReviews?: PropertyReviews;
+  propertyReviews?: PropertyReviews; // sample listings only; real ones use googlePlaceId
+  googlePlaceId?: string; // Google Place ID of the property management company (rating is fetched live)
+  propertyGroup?: string; // that company's name, shown while the rating loads
   landlordConsent: boolean;
   confirmedDaysAgo: number;
   photos: string[]; // image paths under /public, or compressed data URLs for photos a student uploaded

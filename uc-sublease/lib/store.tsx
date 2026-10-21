@@ -429,6 +429,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           sublet_fee: draft.subletFee,
           fee_split_pct: draft.feeSplitPct,
           household: (draft.household as unknown as Json | undefined) ?? null,
+          google_place_id: draft.googlePlaceId ?? null,
+          property_group: draft.propertyGroup ?? null,
           landlord_consent: true,
           photos,
           thumbs,

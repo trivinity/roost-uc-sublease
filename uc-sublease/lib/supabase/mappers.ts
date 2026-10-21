@@ -47,6 +47,8 @@ export function toListing(r: ListingRow, userId: string | null): Listing {
     feeSplitPct: r.fee_split_pct,
     household: (r.household as unknown as Household | null) ?? undefined,
     propertyReviews: (r.property_reviews as unknown as PropertyReviews | null) ?? undefined,
+    googlePlaceId: r.google_place_id ?? undefined,
+    propertyGroup: r.property_group ?? undefined,
     landlordConsent: r.landlord_consent,
     confirmedDaysAgo: Math.max(0, Math.floor((Date.now() - new Date(r.confirmed_at).getTime()) / DAY)),
     photos: r.photos.map(photoUrl),

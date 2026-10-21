@@ -32,6 +32,7 @@ import {
   TRANSFER_LABEL,
   UNIT_LABEL,
 } from "@/lib/format";
+import { GoogleRatingCard } from "@/components/google-rating";
 import { priceInsight } from "@/lib/insights";
 import { PHOTO_VT, withPhotoTransition } from "@/lib/transition";
 import { useStore } from "@/lib/store";
@@ -326,21 +327,21 @@ export default function ListingPage() {
       <div className="mt-6 space-y-4">
         <GettingAround listing={l} />
         <RoommateFit listing={l} />
-        {l.propertyReviews && (
-          <div className="flex items-center justify-between gap-3 rounded-3xl border border-border bg-card p-4 text-sm">
-            <div>
-              <p className="font-semibold">{l.propertyReviews.group}</p>
-              <p className="text-xs text-muted-foreground">
-                Property group · reviews are from Google
+        {l.googlePlaceId ? (
+          <GoogleRatingCard placeId={l.googlePlaceId} fallbackName={l.propertyGroup} />
+        ) : (
+          l.propertyReviews && (
+            <div className="flex items-center justify-between gap-3 rounded-3xl border border-border bg-card p-4 text-sm">
+              <div>
+                <p className="font-semibold">{l.propertyReviews.group}</p>
+                <p className="text-xs text-muted-foreground">Property group · made-up rating for this sample</p>
+              </div>
+              <p className="shrink-0 font-medium">
+                ★ {l.propertyReviews.rating.toFixed(1)}{" "}
+                <span className="font-normal text-muted-foreground">({l.propertyReviews.count} reviews)</span>
               </p>
             </div>
-            <p className="shrink-0 font-medium">
-              ★ {l.propertyReviews.rating.toFixed(1)}{" "}
-              <span className="font-normal text-muted-foreground">
-                ({l.propertyReviews.count} Google reviews)
-              </span>
-            </p>
-          </div>
+          )
         )}
       </div>
 

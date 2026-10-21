@@ -11,6 +11,7 @@ A senior design capstone: a swipe-based sublease marketplace for University of C
 ## Docs
 
 - [`docs/SUPABASE.md`](docs/SUPABASE.md): the backend, its security rules, the one-time dashboard setup, and the encryption answer
+- [`docs/GOOGLE_REVIEWS.md`](docs/GOOGLE_REVIEWS.md): live Google star ratings for property companies (setup, cost, Google's rules)
 - [`docs/CHECKLIST.md`](docs/CHECKLIST.md): weekly checklist for advisor check-ins
 - [`docs/advisor-meeting-2026-10-21.md`](docs/advisor-meeting-2026-10-21.md): status and talking points
 

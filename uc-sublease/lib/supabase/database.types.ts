@@ -25,6 +25,7 @@ export type Database = {
           end_date: string;
           fee_split_pct: number;
           furnished: boolean;
+          google_place_id: string | null;
           host_detail: string;
           host_name: string;
           household: Json | null;
@@ -35,6 +36,7 @@ export type Database = {
           lng: number;
           owner_id: string | null;
           photos: string[];
+          property_group: string | null;
           property_reviews: Json | null;
           rent: number;
           start_date: string;
@@ -58,6 +60,7 @@ export type Database = {
           end_date: string;
           fee_split_pct?: number;
           furnished: boolean;
+          google_place_id?: string | null;
           host_detail?: string;
           host_name?: string;
           household?: Json | null;
@@ -68,6 +71,7 @@ export type Database = {
           lng: number;
           owner_id?: string | null;
           photos?: string[];
+          property_group?: string | null;
           property_reviews?: Json | null;
           rent: number;
           start_date: string;
@@ -91,6 +95,7 @@ export type Database = {
           end_date?: string;
           fee_split_pct?: number;
           furnished?: boolean;
+          google_place_id?: string | null;
           host_detail?: string;
           host_name?: string;
           household?: Json | null;
@@ -101,6 +106,7 @@ export type Database = {
           lng?: number;
           owner_id?: string | null;
           photos?: string[];
+          property_group?: string | null;
           property_reviews?: Json | null;
           rent?: number;
           start_date?: string;

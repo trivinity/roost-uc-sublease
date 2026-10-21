@@ -11,7 +11,7 @@ Scratch items off at each check-in. Order follows the priorities agreed with Pro
 - [x] Listing form: rent, terms, exact dates, utilities, furnished, room vs whole unit, lease transfer type (sublease, assignment, re-let)
 - [x] Sublet fee: appears after the landlord-consent box, with a 0 to 100% "how much will you cover" slider and live dollar amounts
 - [x] Amenity tags are icons with hover/tap labels
-- [x] Property group name and Google review rating, labeled as Google reviews (sample data)
+- [x] Property group Google star rating: pick the company on the post form and the listing shows its live rating from the Google Places API (see [`GOOGLE_REVIEWS.md`](GOOGLE_REVIEWS.md)); sample listings keep made-up ratings labeled as such
 - [x] Open to faculty, staff and grad students (`@uc.edu` as well as `@mail.uc.edu`)
 - [x] Roommate preferences: 6 rating scales + smoke-free and cat/dog checkboxes; users rate themselves too
 - [x] Results ranked by roommate fit by default (not by newest), with a **Show all** toggle
@@ -41,6 +41,7 @@ Scratch items off at each check-in. Order follows the priorities agreed with Pro
 
 ## Hardening before real students use it
 
+- [ ] Restrict the Google key to Places API (New) and set a daily quota and budget alert; regenerate it if it was pasted in chat
 - [ ] Rate limit and cache the address lookup (OpenStreetMap asks for 1 request per second; upgrade to Mapbox or Google if usage grows)
 - [ ] Spam protection: CAPTCHA on the code request, rate limits on posting and messaging (the database already validates fields and caps 20 active listings per student)
 - [ ] Admin screen for the report queue (reports are stored; today staff read them and take listings down in the SQL editor)
