@@ -33,6 +33,8 @@ function Collage({ className }: { className?: string }) {
   );
 }
 
+const LAST_EMAIL_KEY = "roost-last-email";
+
 export default function SignInPage() {
   const { requestCode, verifyCode } = useStore();
   const [email, setEmail] = useState("");
@@ -42,6 +44,19 @@ export default function SignInPage() {
   const [status, setStatus] = useState<OtpStatus>("idle");
   const [codeError, setCodeError] = useState("");
   const [cooldown, setCooldown] = useState(0);
+
+  // Prefill the email: the one used last time on this device, or (local dev only) NEXT_PUBLIC_PREFILL_EMAIL from .env.local.
+  // That variable is deliberately not set on the live site, so nobody else's email ever appears there.
+  /* eslint-disable react-hooks/set-state-in-effect -- one-time prefill from localStorage after hydration */
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(LAST_EMAIL_KEY) || process.env.NEXT_PUBLIC_PREFILL_EMAIL || "";
+      if (saved) setEmail(saved);
+    } catch {
+      // storage blocked: the field just starts empty
+    }
+  }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // one code per minute (the email service enforces this too)
   useEffect(() => {
@@ -60,6 +75,11 @@ export default function SignInPage() {
       return false;
     }
     setCooldown(60);
+    try {
+      localStorage.setItem(LAST_EMAIL_KEY, email.trim().toLowerCase());
+    } catch {
+      // not remembered; no harm done
+    }
     return true;
   };
 

@@ -31,7 +31,7 @@ Scratch items off at each check-in. Order follows the priorities agreed with Pro
 ## Next (in priority order)
 
 1. [ ] **Finish email sign-in in the Supabase dashboard** (needs you; 15 minutes): code email template, custom SMTP (the built-in sender only emails Supabase team members), URL settings. Steps in [`SUPABASE.md`](SUPABASE.md). Until then students cannot receive codes
-2. [ ] **Switch the live site to the Supabase version** (the old demo with code `123456` stays up until we do)
+2. [x] **Switched the live site to the Supabase version** (2026-10-21). The old demo with code `123456` is gone; sign-in now needs a UC email and an emailed code, so step 1 is what lets students in
 3. [ ] **Phone app on Supabase** (same data layer, session in AsyncStorage, photo upload)
 4. [ ] Replace sample shuttle and bus stops with real data
 5. [ ] **Encryption decision** with the advisor (recommendation in `SUPABASE.md`: transit + at-rest + 30-day retention, say plainly that staff can review reported chats)
