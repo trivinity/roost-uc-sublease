@@ -8,3 +8,4 @@ node_modules/
 # video renders: keep only the final promo
 roost-video/out/*
 !roost-video/out/roost-promo.mp4
+.vercel

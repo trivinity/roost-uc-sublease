@@ -114,13 +114,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const p = JSON.parse(raw) as Persisted;
-        setUser(p.user);
-        setPosted(p.posted);
+        setUser(p.user ?? null);
+        setPosted(p.posted ?? []);
         setFilters({ ...DEFAULT_FILTERS, ...p.filters });
-        setSeen(p.seen);
-        setShortlist(p.shortlist);
-        setThreads(p.threads);
-        setReported(p.reported);
+        setSeen(p.seen ?? []);
+        setShortlist(p.shortlist ?? []);
+        setThreads(p.threads ?? SEED_THREADS);
+        setReported(p.reported ?? []);
         setOnboarded(p.onboarded ?? false);
         setPrefs(p.prefs ? { ...DEFAULT_PREFS, ...p.prefs } : null);
         setPrefsAsked(p.prefsAsked ?? false);
