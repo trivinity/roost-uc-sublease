@@ -38,14 +38,14 @@ The security advisor also notes that `email_allowlist` has row-level security on
 
 These settings are not reachable from code, so they need you (project → **Authentication**):
 
-1. **Email template with a code.** Templates → *Magic Link*. Replace the body so it shows the code (the app asks for a 6-digit code):
+1. **Email templates with a code.** Templates → edit **both** *Confirm sign up* and *Magic link*. A student's first sign-in is a sign-up, so it uses *Confirm sign up* ([Supabase discussion](https://github.com/orgs/supabase/discussions/28947)); later sign-ins use *Magic link*. Replace the body of each so it shows the code (the app asks for a 6-digit code):
    ```html
    <h2>Your Roost code</h2>
    <p>Enter this code to sign in: <strong>{{ .Token }}</strong></p>
    <p>It expires soon. If you didn't ask for it, ignore this email.</p>
    ```
    Also set the subject to `Your Roost code`.
-2. **Custom SMTP (required before real students sign in).** Settings → SMTP. Supabase's built-in email service **only delivers to people on your Supabase organization's team** and is rate limited, so without this, students never get a code ([docs](https://supabase.com/docs/guides/auth/auth-smtp)). Use Resend, Postmark, SendGrid or AWS SES with a sender on a domain you control. Then raise Rate Limits → "Sign-ups and sign-ins" if you expect a class announcement (the default with custom SMTP is 30 new users per hour, per the [production checklist](https://supabase.com/docs/guides/deployment/going-into-prod)).
+2. **Custom SMTP (required before real students sign in).** Settings → SMTP. Supabase's built-in email service **only delivers to people on your Supabase organization's team** and is rate limited, so without this, students never get a code ([docs](https://supabase.com/docs/guides/auth/auth-smtp)). Use Resend, Postmark, SendGrid or AWS SES with a sender on a domain you control (Resend's test sender only emails your own account until you verify a domain). With no domain yet, a Gmail address with an [app password](https://myaccount.google.com/apppasswords) works for a class test (host `smtp.gmail.com`, port 465, about 500 emails a day). Then raise Rate Limits → "Sign-ups and sign-ins" if you expect a class announcement (the default with custom SMTP is 30 new users per hour, per the [production checklist](https://supabase.com/docs/guides/deployment/going-into-prod)).
 3. **URL configuration.** Site URL `https://roost-uc-sublease.vercel.app`; add Redirect URLs `https://roost-uc-sublease.vercel.app/**` and `http://localhost:3000/**`.
 4. **Before launch:** upgrade to Pro. Free projects are paused after about 7 days without activity, and Pro adds daily backups. Turn on SSL enforcement under Database → Settings.
 
