@@ -76,7 +76,7 @@ export function SwipeDeck() {
       if (dir === -1) {
         setHistory((h) => [...h, { id: l.id, saved: false }]);
       } else if (RIGHT_SWIPE_ACTION === "message") {
-        router.push(`/messages/${startChat(l.id)}`);
+        void startChat(l.id).then((tid) => tid && router.push(`/messages/${tid}`));
       } else {
         const wasSaved = shortlist.includes(l.id);
         save(l.id);

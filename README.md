@@ -1,6 +1,6 @@
 # Roost: verified student sublease marketplace (UC capstone demo)
 
-A clickable prototype for a senior design capstone: a swipe-based sublease marketplace for University of Cincinnati students. All data is fake and there is no backend.
+A senior design capstone: a swipe-based sublease marketplace for University of Cincinnati students. The web app runs on a Supabase backend (accounts, listings, photos, real-time chat). The sample listings are made up.
 
 | Folder | What it is |
 | --- | --- |
@@ -10,24 +10,24 @@ A clickable prototype for a senior design capstone: a swipe-based sublease marke
 
 ## Docs
 
+- [`docs/SUPABASE.md`](docs/SUPABASE.md): the backend, its security rules, the one-time dashboard setup, and the encryption answer
 - [`docs/CHECKLIST.md`](docs/CHECKLIST.md): weekly checklist for advisor check-ins
 - [`docs/advisor-meeting-2026-10-21.md`](docs/advisor-meeting-2026-10-21.md): status and talking points
 
 ## Live demo
 
-**https://roost-uc-sublease.vercel.app** (the web app, hosted on Vercel). Sign in with any `@mail.uc.edu` email and the demo code `123456`. Data is fake and is saved only in your own browser.
-
-Pushing to `main` redeploys it automatically (Vercel project root is `uc-sublease/`).
+**https://roost-uc-sublease.vercel.app** (the web app, hosted on Vercel; project root is `uc-sublease/`). Students sign in with a UC email and a one-time code emailed to them. Finish the email setup in [`docs/SUPABASE.md`](docs/SUPABASE.md) first, or nobody can receive a code.
 
 ## Run the app
 
 ```bash
 cd uc-sublease
+cp .env.example .env.local   # then fill in the two Supabase values
 npm install
 npm run dev        # http://localhost:3000
 ```
 
-Sign in with any `@mail.uc.edu` email and the demo code `123456`.
+Sign in with a UC email; the code arrives by email. To let a non-UC address in for testing, see "Letting in someone without a UC email" in [`docs/SUPABASE.md`](docs/SUPABASE.md). The phone app (`roost-mobile/`) still uses local demo data (code `123456`).
 
 ## Run the phone app
 

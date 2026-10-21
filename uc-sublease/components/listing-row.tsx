@@ -48,6 +48,7 @@ export function ListingRow({ listing: l, mine }: { listing: Listing; mine?: bool
         <p className="line-clamp-2 text-sm font-medium leading-snug">{l.title}</p>
         <div className="mt-auto flex flex-wrap items-center gap-1.5 pt-2">
           {mine && <Pill className="bg-primary text-white">Your listing</Pill>}
+          {l.isSample && <Pill className="bg-neutral-800 text-white dark:bg-neutral-200 dark:text-neutral-900">Sample</Pill>}
           <AreaPill area={l.neighborhood} miles={l.distanceMiles} />
           <Pill>
             {l.unitType === "room" ? "Room" : "Whole unit"} · {bedroomLabel(l.bedrooms)}

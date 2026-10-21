@@ -1,13 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { ArrowLeft, BadgeCheck, EyeOff, ShieldCheck } from "lucide-react";
 import { Credits } from "@/components/app-shell";
 import { ThemeToggle } from "@/components/theme";
 import { Button } from "@/components/ui/button";
 import { OtpInput, type OtpStatus } from "@/components/ui/otp-input";
-import { DEMO_CODE, UC_EMAIL_PATTERN } from "@/lib/config";
 import { useStore } from "@/lib/store";
 import { COPY } from "@/lib/copy";
 
@@ -35,28 +34,51 @@ function Collage({ className }: { className?: string }) {
 }
 
 export default function SignInPage() {
-  const { signIn } = useStore();
+  const { requestCode, verifyCode } = useStore();
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
+  const [sending, setSending] = useState(false);
   const [step, setStep] = useState<"email" | "code">("email");
   const [status, setStatus] = useState<OtpStatus>("idle");
+  const [codeError, setCodeError] = useState("");
+  const [cooldown, setCooldown] = useState(0);
 
-  const submitEmail = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!UC_EMAIL_PATTERN.test(email.trim())) {
-      setError(COPY.signin.notUc);
-      return;
-    }
+  // one code per minute (the email service enforces this too)
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [cooldown]);
+
+  const sendCode = async () => {
+    setSending(true);
     setError("");
-    setStep("code");
+    const err = await requestCode(email);
+    setSending(false);
+    if (err) {
+      setError(err);
+      return false;
+    }
+    setCooldown(60);
+    return true;
   };
 
-  const checkCode = (code: string) => {
-    if (code === DEMO_CODE) {
-      setStatus("success");
-      setTimeout(() => signIn(email.trim()), 800);
-    } else {
+  const submitEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setError(COPY.signin.badEmail);
+      return;
+    }
+    if (await sendCode()) setStep("code");
+  };
+
+  const checkCode = async (code: string) => {
+    const err = await verifyCode(email, code);
+    if (err) {
+      setCodeError(err);
       setStatus("error");
+    } else {
+      setStatus("success"); // the app moves on by itself once the session is ready
     }
   };
 
@@ -119,39 +141,42 @@ export default function SignInPage() {
                 />
               </label>
               {error && <p className="text-sm text-destructive">{error}</p>}
-              <Button type="submit" size="lg" className="w-full">
-                Send code
+              <Button type="submit" size="lg" className="w-full" disabled={sending}>
+                {sending ? "Sending…" : "Send code"}
               </Button>
             </form>
           ) : (
             <div className="space-y-6">
               <div className="space-y-1 text-center md:text-left">
                 <p className="font-medium">Enter your 6-digit code</p>
-                <p className="text-sm text-muted-foreground">
-                  We “sent” it to {email.trim()}. Demo code: <span className="font-mono">{DEMO_CODE}</span>
-                </p>
+                <p className="text-sm text-muted-foreground">We emailed it to {email.trim()}. It can take a minute to arrive.</p>
               </div>
               <div className="flex justify-center md:justify-start">
-                <OtpInput length={6} size="md" autoFocus status={status} onChange={() => setStatus("idle")} onComplete={checkCode} />
+                <OtpInput length={6} size="md" autoFocus status={status} onChange={() => setStatus("idle")} onComplete={(c) => void checkCode(c)} />
               </div>
               <p className="h-5 text-center text-sm text-destructive md:text-left" aria-live="polite">
-                {status === "error" ? COPY.signin.wrongCode : ""}
+                {status === "error" ? codeError : ""}
               </p>
-              <Button
-                variant="ghost"
-                onClick={() => {
-                  setStep("email");
-                  setStatus("idle");
-                }}
-                className="mx-auto flex md:mx-0"
-              >
-                <ArrowLeft className="size-4" /> Use a different email
-              </Button>
+              <div className="flex flex-col items-center gap-1 md:items-start">
+                <Button variant="ghost" disabled={cooldown > 0 || sending} onClick={() => void sendCode()}>
+                  {cooldown > 0 ? `Send a new code in ${cooldown}s` : "Send a new code"}
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    setStep("email");
+                    setStatus("idle");
+                    setError("");
+                  }}
+                >
+                  <ArrowLeft className="size-4" /> Use a different email
+                </Button>
+              </div>
             </div>
           )}
 
           <p className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground md:justify-start">
-            <ShieldCheck className="size-3.5" /> Prototype only. No real accounts or emails are used.
+            <ShieldCheck className="size-3.5" /> We only use your UC email to confirm you&apos;re a student.
           </p>
         </div>
         <Credits />

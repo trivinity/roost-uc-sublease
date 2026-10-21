@@ -36,11 +36,14 @@ export function ListingCard({ listing: l, interactive = false, preview = false }
           ))}
         </div>
         <div className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-black/25 to-transparent" />
-        {l.furnished && (
-          <span className="absolute left-3 top-8 inline-flex items-center gap-1 rounded-full bg-amber-300 px-2.5 py-1 text-xs font-medium text-amber-950">
-            <Sofa className="size-3.5" /> Furnished
-          </span>
-        )}
+        <div className="absolute left-3 top-8 flex gap-1.5">
+          {l.furnished && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-amber-300 px-2.5 py-1 text-xs font-medium text-amber-950">
+              <Sofa className="size-3.5" /> Furnished
+            </span>
+          )}
+          {l.isSample && <span className="inline-flex items-center rounded-full bg-black/55 px-2.5 py-1 text-xs font-medium text-white">Sample</span>}
+        </div>
         {!preview && <SaveButton id={l.id} className="absolute right-3 top-8" />}
         {fit && <MatchBadge score={fit.score} className="absolute bottom-3 right-3 shadow-sm" />}
         {insight?.tone === "great" && (

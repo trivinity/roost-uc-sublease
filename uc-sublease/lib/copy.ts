@@ -17,6 +17,20 @@ export const COPY = {
     notUc:
       "Please use your UC email (@mail.uc.edu or @uc.edu). Roost is just for the UC community.",
     wrongCode: "Hmm, that code isn't right. Give it another go.",
+    tooMany: "That's a lot of codes. Wait a minute and try again.",
+    badEmail: "That doesn't look like an email address.",
+    notReady: "We can't email that address yet. Try again later or ask the Roost team.",
+    failed: "We couldn't send the code. Check your connection and try again.",
+  },
+  errors: {
+    generic: "Something went wrong. Please try again.",
+    offline: "We couldn't reach Roost. Check your connection and try again.",
+    load: "We couldn't load your data. Pull to refresh or try again in a moment.",
+    notSetUp: "Roost isn't connected to its database yet. Add the Supabase keys and reload.",
+    sendFailed: "That message didn't send. Try again.",
+    postFailed: "We couldn't post that listing. Try again.",
+    photoFailed: "A photo didn't upload. Try again or remove it.",
+    photos: "Add at least one photo so people can see the place.",
   },
   post: {
     title: "Give your listing a short headline.",
@@ -54,6 +68,7 @@ export const COPY = {
     },
     inbox:
       "No messages yet. Say hi to a sublessor and the chat will show up here.",
+    sample: "Sample listing: the host here is made up and replies automatically.",
     pickChat: {
       title: "Your messages",
       body: "Pick a chat, or message a sublessor from any listing.",

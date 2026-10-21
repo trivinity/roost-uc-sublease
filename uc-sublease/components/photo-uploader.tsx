@@ -13,9 +13,11 @@ import {
 export function PhotoUploader({
   photos,
   onChange,
+  error: required,
 }: {
   photos: ProcessedPhoto[];
   onChange: (p: ProcessedPhoto[]) => void;
+  error?: string; // shown when the form was submitted without any photo
 }) {
   const input = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
@@ -119,11 +121,10 @@ export function PhotoUploader({
       )}
       {photos.length === 0 && (
         <p className="text-xs text-muted-foreground">
-          Any size works. Don&apos;t add photos and we&apos;ll show demo
-          pictures.
+          Any size works. We shrink them for you, and add at least one.
         </p>
       )}
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      {(error || required) && <p className="text-sm text-destructive">{error || required}</p>}
     </div>
   );
 }

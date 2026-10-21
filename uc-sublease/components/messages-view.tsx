@@ -55,7 +55,6 @@ export function MessagesView({ activeId }: { activeId?: string }) {
             .filter((t) => t.messages.length > 0 || t.id === activeId)
             .map((t) => {
               const l = getListing(t.listingId);
-              if (!l) return null;
               const last = t.messages[t.messages.length - 1];
               return (
                 <li key={t.id}>
@@ -66,8 +65,8 @@ export function MessagesView({ activeId }: { activeId?: string }) {
                       t.id === activeId && "bg-muted",
                     )}
                   >
-                    <div className="size-12 shrink-0 overflow-hidden rounded-full">
-                      <Photo listing={l} className="size-full" thumb />
+                    <div className="size-12 shrink-0 overflow-hidden rounded-full bg-muted">
+                      {l && <Photo listing={l} className="size-full" thumb />}
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-baseline justify-between gap-2">
@@ -77,14 +76,14 @@ export function MessagesView({ activeId }: { activeId?: string }) {
                             t.unread ? "font-semibold" : "font-medium",
                           )}
                         >
-                          {l.sublessor.name}
+                          {t.otherName ?? l?.sublessor.name}
                         </p>
                         <p className="shrink-0 text-xs text-muted-foreground">
                           {last?.time}
                         </p>
                       </div>
                       <p className="truncate text-xs text-muted-foreground">
-                        {l.title}
+                        {l?.title ?? t.listingTitle}
                       </p>
                       <p
                         className={cn(
@@ -132,16 +131,10 @@ export function MessagesView({ activeId }: { activeId?: string }) {
 }
 
 function ChatThread({ thread }: { thread: Thread }) {
-  const {
-    getListing,
-    markRead,
-    sendMessage,
-    shareContact,
-    user,
-    typingThread,
-  } = useStore();
+  const { getListing, markRead, sendMessage, shareContact, user } = useStore();
   const l = getListing(thread.listingId);
-  const first = l?.sublessor.name.split(" ")[0] ?? "them";
+  const other = thread.otherName ?? l?.sublessor.name ?? "them";
+  const first = other.split(" ")[0];
   const [draft, setDraft] = useState(
     thread.messages.length === 0 && l
       ? `Hi ${first}! Is your ${l.neighborhood} place still available for ${fmtRange(l.startDate, l.endDate)}?`
@@ -155,15 +148,13 @@ function ChatThread({ thread }: { thread: Thread }) {
 
   useEffect(() => {
     bottom.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [thread.messages.length, typingThread]);
-
-  if (!l) return null;
+  }, [thread.messages.length]);
 
   const send = (e: React.FormEvent) => {
     e.preventDefault();
     const text = draft.trim();
     if (!text) return;
-    sendMessage(thread.id, text);
+    void sendMessage(thread.id, text);
     setDraft("");
   };
 
@@ -177,30 +168,37 @@ function ChatThread({ thread }: { thread: Thread }) {
         >
           <ArrowLeft className="size-5" />
         </Link>
-        <Link
-          href={`/listing/${l.id}`}
-          className="flex min-w-0 flex-1 items-center gap-3"
-        >
-          <div className="size-10 shrink-0 overflow-hidden rounded-xl">
-            <Photo listing={l} className="size-full" thumb />
+        {l ? (
+          <Link href={`/listing/${l.id}`} className="flex min-w-0 flex-1 items-center gap-3">
+            <div className="size-10 shrink-0 overflow-hidden rounded-xl">
+              <Photo listing={l} className="size-full" thumb />
+            </div>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold">{other}</p>
+              <p className="truncate text-xs text-muted-foreground">
+                {l.title} · {fmtMoney(l.rent)}/mo
+              </p>
+            </div>
+          </Link>
+        ) : (
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold">{other}</p>
+            <p className="truncate text-xs text-muted-foreground">{thread.listingTitle} · no longer listed</p>
           </div>
-          <div className="min-w-0">
-            <p className="truncate text-sm font-semibold">{l.sublessor.name}</p>
-            <p className="truncate text-xs text-muted-foreground">
-              {l.title} · {fmtMoney(l.rent)}/mo
-            </p>
-          </div>
-        </Link>
+        )}
       </header>
 
       <ContactPanel
         thread={thread}
         first={first}
-        onShare={() => shareContact(thread.id)}
+        onShare={() => void shareContact(thread.id)}
         myEmail={user?.email ?? ""}
       />
 
-      <p className="border-b border-border px-4 py-2 text-center text-xs text-muted-foreground">{COPY.empty.retention}</p>
+      <p className="border-b border-border px-4 py-2 text-center text-xs text-muted-foreground">
+        {COPY.empty.retention}
+        {l?.isSample && <span className="block text-amber-700 dark:text-amber-300">{COPY.empty.sample}</span>}
+      </p>
 
       <div className="flex-1 space-y-2 overflow-y-auto px-4 py-4">
         {thread.messages.length === 0 && (
@@ -234,19 +232,6 @@ function ChatThread({ thread }: { thread: Thread }) {
               </p>
             </div>
           ),
-        )}
-        {typingThread === thread.id && (
-          <div className="flex justify-start" aria-label={`${first} is typing`}>
-            <span className="flex gap-1 rounded-3xl bg-muted px-4 py-3.5">
-              {[0, 1, 2].map((d) => (
-                <span
-                  key={d}
-                  className="size-1.5 animate-bounce rounded-full bg-muted-foreground/60"
-                  style={{ animationDelay: `${d * 120}ms` }}
-                />
-              ))}
-            </span>
-          </div>
         )}
         <div ref={bottom} />
       </div>
@@ -290,7 +275,7 @@ function ChatThread({ thread }: { thread: Thread }) {
   );
 }
 
-// Contact details stay hidden until the user opts in; the fake sublessor then shares back.
+// Contact details stay hidden until each person opts in. The server only hands over the other person's email after they shared it.
 function ContactPanel({
   thread,
   first,
@@ -328,9 +313,7 @@ function ContactPanel({
           <EyeOff className="size-4" />
         )}
         {thread.theirContactShared ? (
-          <span className="text-foreground">
-            {first.toLowerCase()}@mail.uc.edu · (513) 555-0187
-          </span>
+          <span className="text-foreground">{thread.theirContact ?? "Loading…"}</span>
         ) : (
           `${first}'s contact info is hidden until they share it`
         )}

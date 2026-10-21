@@ -20,25 +20,32 @@ Scratch items off at each check-in. Order follows the priorities agreed with Pro
 - [x] Chat screen states the 30-day retention
 - [x] Hosted on Vercel for testing: https://roost-uc-sublease.vercel.app
 - [x] Phone app (Expo Go): same features except photo upload
+- [x] Browse map rebuilt: price pins that fit, clustering, popup cards, softer basemap
+- [x] **Shared backend on Supabase** (see [`SUPABASE.md`](SUPABASE.md)): listings, profiles and preferences, shortlist, chats, reports, with row-level security on every table (26 scripted checks pass)
+- [x] **Real sign-in without SSO:** emailed one-time code; the database only lets `@mail.uc.edu` / `@uc.edu` accounts exist (needs the email template and custom SMTP, see below)
+- [x] **Real-time chat** with contact info hidden until each side shares
+- [x] Photo upload goes to Supabase Storage (compressed full-size + thumbnail, per-student folders)
+- [x] **30-day chat deletion** runs nightly (legal retention answer from UC still open)
+- [x] Encryption question researched: Supabase has TLS in transit, AES-256 at rest and row-level access rules, but **no end-to-end encryption** (details and recommendation in `SUPABASE.md`)
 
 ## Next (in priority order)
 
-1. [ ] **Shared backend (Supabase).** Today every browser has its own copy of the data, so testers can't see each other's listings or chats. Needs: tables for listings, profiles/preferences, chats, reports; row-level security; image storage
-2. [ ] **Real sign-in without SSO:** one-time code emailed to a UC address (proves they own the inbox), restricted to `@mail.uc.edu` and `@uc.edu`
-3. [ ] **Real chat** (Supabase realtime) with contact info hidden until shared
-4. [ ] Move photo compression + thumbnails to the upload path (Storage) and add photo upload to the phone app
-5. [ ] Replace sample shuttle and bus stops with real data
-6. [ ] **Encryption decision and write-up** (see "Decisions"): HTTPS and at-rest encryption vs end-to-end
-7. [ ] **30-day chat deletion** (scheduled job) and a legal retention answer from UC
-8. [ ] Suggested message questions from a low-cost LLM (about $0.40 per 100 to 200 messages) with a daily spending cap
-9. [ ] Test plan for students: announcement, tasks to try, feedback form, simple usage analytics
-10. [ ] UC SSO (last, once approved by IT)
+1. [ ] **Finish email sign-in in the Supabase dashboard** (needs you; 15 minutes): code email template, custom SMTP (the built-in sender only emails Supabase team members), URL settings. Steps in [`SUPABASE.md`](SUPABASE.md). Until then students cannot receive codes
+2. [ ] **Switch the live site to the Supabase version** (the old demo with code `123456` stays up until we do)
+3. [ ] **Phone app on Supabase** (same data layer, session in AsyncStorage, photo upload)
+4. [ ] Replace sample shuttle and bus stops with real data
+5. [ ] **Encryption decision** with the advisor (recommendation in `SUPABASE.md`: transit + at-rest + 30-day retention, say plainly that staff can review reported chats)
+6. [ ] Suggested message questions from a low-cost LLM (about $0.40 per 100 to 200 messages) with a daily spending cap
+7. [ ] Test plan for students: announcement, tasks to try, feedback form, simple usage analytics
+8. [ ] UC SSO (last, once approved by IT)
 
 ## Hardening before real students use it
 
 - [ ] Rate limit and cache the address lookup (OpenStreetMap asks for 1 request per second; upgrade to Mapbox or Google if usage grows)
-- [ ] Input validation and spam protection on posting and messaging
-- [ ] Report queue and a way to take a listing down
+- [ ] Spam protection: CAPTCHA on the code request, rate limits on posting and messaging (the database already validates fields and caps 20 active listings per student)
+- [ ] Admin screen for the report queue (reports are stored; today staff read them and take listings down in the SQL editor)
+- [ ] Upgrade Supabase to Pro before launch (Free projects pause after about 7 days idle; Pro adds daily backups)
+- [ ] Clean up Storage photos when a listing is deleted
 - [ ] Privacy policy and terms (what is stored, for how long, who can see it)
 - [ ] Accessibility pass (keyboard, screen reader, color contrast) and reduced motion
 - [ ] Error monitoring and automated tests for the ranking, distance and fee math

@@ -1,16 +1,17 @@
 # Roost: verified student sublease marketplace (UC demo)
 
-A clickable prototype for a senior design capstone. Next.js (App Router) + TypeScript + Tailwind. **All data is fake and there is no backend**; state lives in React context and is mirrored to `localStorage` so a refresh doesn't wipe the demo.
+A senior design capstone. Next.js (App Router) + TypeScript + Tailwind on a **Supabase** backend: email-code sign-in restricted to UC addresses, shared listings with photo storage, real-time chat, and row-level security on every table. The 20 sample listings are made up (they carry a "Sample" badge and answer automatically). Details, setup steps and the encryption answer: [`../docs/SUPABASE.md`](../docs/SUPABASE.md).
 
 ## Run it
 
 ```bash
+cp .env.example .env.local    # fill in NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 npm install
 npm run dev      # http://localhost:3000
 npm run build    # production build check
 ```
 
-Sign in with any `@mail.uc.edu` address and the demo code **123456**. To reset the demo, clear this site's localStorage (or sign out and clear `roost-demo-v1`).
+Sign in with a UC address; a code is emailed to it. Per-device settings (filters, cards you already swiped) are kept in localStorage key `roost-ui-v3`; everything else lives in Supabase.
 
 ## The one-line switch
 
@@ -29,14 +30,14 @@ The button label, swipe stamp and behavior all follow the constant. The shortlis
 
 | Route | What it is |
 | --- | --- |
-| `/signin` | Fake sign-in: `@mail.uc.edu` only, fake 6-digit code (`123456`) |
+| `/signin` | Email a one-time code to a `@mail.uc.edu` / `@uc.edu` address, then enter the 6 digits |
 | `/` | Swipe deck (drag, buttons, or ← → keys; undo last swipe) |
 | `/list` | Same listings as a list. Shares **one** filter state with the deck |
 | `/shortlist` | Saved listings; tick 2–3 to compare side by side |
 | `/listing/[id]` | Photos, structured fields, "still available?" freshness label, report |
 | `/mine` | My listings: re-confirm "still available" or mark as rented |
 | `/post` | Post a listing; the subletting/landlord-consent checkbox is required |
-| `/messages`, `/messages/[id]` | Fake threads. Contact info stays hidden until you choose to share |
+| `/messages`, `/messages/[id]` | Real-time chats (kept 30 days). Contact info stays hidden until each side chooses to share |
 
 Filters (distance from UC, rent range, dates with Spring/Summer/Fall presets, bedrooms, furnished) are opened from the Filters button on `/` and `/list`. The date filter matches listings that cover your **whole** range. Term dates are in `lib/filters.ts`.
 
@@ -55,8 +56,9 @@ components/
   report-dialog.tsx  sheet.tsx  chip.tsx  pill.tsx  save-button.tsx  photo.tsx  app-shell.tsx
 lib/
   config.ts          RIGHT_SWIPE_ACTION, demo code, email pattern
-  listings.ts        15 fake listings + seed message threads (the only seed data)
-  store.tsx          all app state (context + localStorage)
+  listings.ts        the 20 sample listings (source of the database seed; the phone app's offline demo still imports it)
+  store.tsx          all app state: Supabase data, auth, live chat, plus per-device UI settings
+  supabase/          client, generated database types, row-to-app mappers
   filters.ts         filter defaults, term presets, filterListings()
   format.ts          dates, money, labels, freshness
   types.ts
@@ -74,7 +76,7 @@ lib/
 - Photo expand transition: tapping a deck card or list row morphs its photo into the detail page using the View Transitions API (`lib/transition.ts`). Browsers without it, or with reduced motion on, navigate normally.
 - Copy: every toast, form error and empty state lives in `lib/copy.ts` so the voice stays consistent.
 - Theme: warm background with a red accent (`--primary` in `app/globals.css`) and one soft color per neighborhood (`HOOD_STYLE` in `lib/format.ts`).
-- Out of scope by design: payments/escrow, protected-characteristic filters, real auth, maps, native apps.
+- Out of scope by design: payments/escrow, protected-characteristic filters, UC single sign-on (deferred until UC IT approves it).
 
 ## Distance, map and nearby stops
 

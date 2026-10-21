@@ -61,22 +61,27 @@ export interface Listing {
   photos: string[]; // image paths under /public, or compressed data URLs for photos a student uploaded
   thumbs?: string[]; // small versions of the same photos, used in lists so they load fast
   sublessor: Sublessor;
+  isSample?: boolean; // made-up listing that ships with the app, answered automatically
 }
 
 export interface Message {
   id: string;
   from: "me" | "them" | "system";
   text: string;
-  time: string;
+  time: string; // short label like "5m" or "Yesterday"
+  createdAt?: string; // ISO timestamp (live chats; the offline demo in the phone app leaves it out)
 }
 
 export interface Thread {
   id: string;
   listingId: string;
+  listingTitle?: string; // live chats; the offline demo reads it from the listing instead
+  otherName?: string; // the person on the other end
   messages: Message[];
   unread: boolean;
   myContactShared: boolean;
   theirContactShared: boolean;
+  theirContact?: string | null; // their email, only once they chose to share it
 }
 
 export interface User {

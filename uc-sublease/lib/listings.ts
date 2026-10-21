@@ -2,6 +2,10 @@ import { milesFromUC } from "./geo";
 import type { Listing, Thread } from "./types";
 
 // All data below is fake. Addresses, people and prices are invented for the demo.
+//
+// The web app no longer reads this file: live listings, chats and accounts come from Supabase, and these 20 listings
+// were loaded into the database as sample rows (supabase/migrations/003_seed_sample_listings.sql, regenerated from here).
+// It stays because the phone app's offline demo still imports it through `npm run sync`.
 
 type RawListing = Omit<Listing, "distanceMiles">;
 

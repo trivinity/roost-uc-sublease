@@ -9,6 +9,7 @@ import { NotificationBell } from "@/components/ui/notification-bell";
 import { ThemeSegment, ThemeToggle } from "@/components/theme";
 import { PrefsPrompt } from "@/components/prefs-prompt";
 import { Welcome } from "@/components/welcome";
+import { COPY } from "@/lib/copy";
 import { useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
@@ -23,7 +24,7 @@ const NAV = [
 const isActive = (path: string, href: string) => (href === "/" ? path === "/" : path === href || path.startsWith(`${href}/`));
 
 export function AppShell({ children }: { children: ReactNode }) {
-  const { ready, user, signOut, unreadCount, toast, onboarded, prefsAsked } = useStore();
+  const { ready, configured, loadError, reload, user, signOut, unreadCount, toast, onboarded, prefsAsked } = useStore();
   const pathname = usePathname();
   const router = useRouter();
   const [menu, setMenu] = useState(false);
@@ -34,6 +35,15 @@ export function AppShell({ children }: { children: ReactNode }) {
     if (!user && !onSignIn) router.replace("/signin");
     if (user && onSignIn) router.replace("/");
   }, [ready, user, onSignIn, router]);
+
+  if (!configured) {
+    return (
+      <div className="mx-auto flex min-h-dvh max-w-sm flex-col items-center justify-center gap-2 px-6 text-center">
+        <p className="font-medium">Roost isn&apos;t connected yet</p>
+        <p className="text-sm text-muted-foreground">{COPY.errors.notSetUp}</p>
+      </div>
+    );
+  }
 
   // Until we know who's signed in (or while redirecting) render the page hidden rather than not at all.
   if (!ready || (!user && !onSignIn) || (user && onSignIn)) {
@@ -133,6 +143,15 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </header>
 
+      {loadError && (
+        <div role="alert" className="flex items-center justify-center gap-3 bg-destructive/10 px-4 py-2 text-sm text-destructive">
+          {loadError}
+          <button type="button" onClick={reload} className="font-medium underline underline-offset-2">
+            Try again
+          </button>
+        </div>
+      )}
+
       <main key={pathname} className={cn("animate-in fade-in duration-300", !inThread && "pb-16 md:pb-0")}>
         {children}
       </main>
@@ -186,7 +205,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 export function Credits() {
   return (
     <p className="py-8 text-center text-xs text-muted-foreground">
-      Demo with fake data · Photos from Unsplash · Interface details from{" "}
+      Sample listings use made-up details · Photos from Unsplash · Interface details from{" "}
       <a href="https://www.rareui.com" target="_blank" rel="noreferrer" className="underline underline-offset-2">
         Rare UI
       </a>

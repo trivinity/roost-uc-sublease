@@ -96,7 +96,8 @@ function Switch({
 
 export default function PostPage() {
   const router = useRouter();
-  const { addListing, showToast } = useStore();
+  const { postListing } = useStore();
+  const [posting, setPosting] = useState(false);
   const [title, setTitle] = useState("");
   const [address, setAddress] = useState("");
   const [place, setPlace] = useState<Place | null>(null);
@@ -166,8 +167,9 @@ export default function PostPage() {
     sublessor: { id: "me", name: "You", detail: "UC verified" },
   };
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (posting) return;
     const err: Record<string, string> = {};
     if (!title.trim()) err.title = COPY.post.title;
     if (!place) err.address = COPY.post.address;
@@ -177,14 +179,15 @@ export default function PostPage() {
     if (!start) err.start = COPY.post.start;
     if (!end) err.end = COPY.post.end;
     else if (start && end <= start) err.end = COPY.post.endBeforeStart;
+    if (!uploads.length) err.photos = COPY.errors.photos;
     if (!consent) err.consent = COPY.post.consent;
     setErrors(err);
     if (Object.keys(err).length) return;
 
-    const id = `mine-${Date.now()}`;
-    addListing({ ...draft, id });
-    showToast(COPY.toast.posted);
-    router.push(`/listing/${id}`);
+    setPosting(true);
+    const id = await postListing(draft, uploads);
+    setPosting(false);
+    if (id) router.push(`/listing/${id}`);
   };
 
   const toggleAmenity = (id: AmenityId) =>
@@ -205,7 +208,7 @@ export default function PostPage() {
           </p>
         </div>
 
-        <PhotoUploader photos={uploads} onChange={setUploads} />
+        <PhotoUploader photos={uploads} onChange={setUploads} error={errors.photos} />
 
         <Field label="Headline" error={errors.title}>
           <input
@@ -537,8 +540,8 @@ export default function PostPage() {
           )}
         </div>
 
-        <Button type="submit" size="lg" className="w-full">
-          Post listing
+        <Button type="submit" size="lg" className="w-full" disabled={posting}>
+          {posting ? "Posting…" : "Post listing"}
         </Button>
       </form>
 

@@ -1,47 +1,65 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { DEFAULT_FILTERS } from "./filters";
-import { LISTINGS, SEED_THREADS } from "./listings";
-import { DEFAULT_PREFS } from "./roommates";
-import type { Filters, Listing, Message, Prefs, Thread, User } from "./types";
+import type { Session } from "@supabase/supabase-js";
 import { COPY } from "./copy";
+import { DEFAULT_FILTERS } from "./filters";
+import type { ProcessedPhoto } from "./images";
+import { getSupabase, supabaseConfigured, type Supabase } from "./supabase/client";
+import type { Json } from "./supabase/database.types";
+import {
+  PHOTO_BUCKET,
+  toListing,
+  toPrefs,
+  toThread,
+  type ListingInsert,
+  type ListingRow,
+  type MessageRow,
+  type ThreadData,
+  type ThreadRow,
+} from "./supabase/mappers";
+import type { Filters, Listing, Prefs, Thread, User } from "./types";
 
-// Everything lives in React state and is mirrored to localStorage so a refresh doesn't wipe the demo.
-const STORAGE_KEY = "roost-demo-v2"; // v2: distance search + roommate preferences
+// Shared data (listings, chats, shortlist, profile) lives in Supabase and is guarded by row level security.
+// Only per-device conveniences stay in localStorage: the filters, which cards you already swiped, and "show all".
+const UI_KEY = "roost-ui-v3";
 
-interface Persisted {
-  user: User | null;
-  posted: Listing[];
+interface UiState {
   filters: Filters;
   seen: string[];
-  shortlist: string[];
-  threads: Thread[];
-  reported: string[];
-  onboarded?: boolean;
-  prefs?: Prefs | null;
-  prefsAsked?: boolean;
-  showAll?: boolean;
+  showAll: boolean;
 }
 
-const REPLIES = [
-  "Sounds good! When are you free to tour?",
-  "Yep, still available. I can show it over video if you're not in town.",
-  "Happy to answer anything. Landlord already signed off on the sublease.",
-  "Great question. I'll send photos of that tonight.",
-];
+// Everything loaded for the signed-in student.
+interface Remote {
+  uid: string;
+  email: string;
+  name: string;
+  onboarded: boolean;
+  prefs: Prefs | null;
+  prefsAsked: boolean;
+  listings: ListingRow[];
+  shortlist: string[];
+  threads: ThreadData[];
+  reported: string[];
+}
 
 interface Store {
   ready: boolean;
+  configured: boolean;
+  loadError: string | null;
+  reload: () => void;
+
   user: User | null;
-  signIn: (email: string) => void;
-  signOut: () => void;
+  requestCode: (email: string) => Promise<string | null>; // resolves to an error message, or null when the code was sent
+  verifyCode: (email: string, code: string) => Promise<string | null>;
+  signOut: () => Promise<void>;
 
   listings: Listing[];
   getListing: (id: string) => Listing | undefined;
-  addListing: (l: Listing) => void;
-  confirmListing: (id: string) => void;
-  removeListing: (id: string) => void;
+  postListing: (draft: Listing, photos: ProcessedPhoto[]) => Promise<string | null>; // resolves to the new id
+  confirmListing: (id: string) => Promise<void>;
+  removeListing: (id: string) => Promise<void>; // marks it as rented
 
   filters: Filters;
   setFilters: (f: Filters) => void;
@@ -58,14 +76,13 @@ interface Store {
 
   threads: Thread[];
   unreadCount: number;
-  startChat: (listingId: string) => string;
-  sendMessage: (threadId: string, text: string) => void;
-  typingThread: string | null;
+  startChat: (listingId: string) => Promise<string | null>; // resolves to the thread id
+  sendMessage: (threadId: string, text: string) => Promise<void>;
   markRead: (threadId: string) => void;
-  shareContact: (threadId: string) => void;
+  shareContact: (threadId: string) => Promise<void>;
 
   reported: string[];
-  report: (listingId: string) => void;
+  report: (listingId: string, reason: string) => Promise<void>;
 
   onboarded: boolean;
   finishOnboarding: () => void;
@@ -90,60 +107,89 @@ export function useStore(): Store {
   return s;
 }
 
+const nameFromEmail = (email: string) => {
+  const local = email.split("@")[0].replace(/[._-]+/g, " ");
+  return local.replace(/\b\w/g, (c) => c.toUpperCase());
+};
+
+function authMessage(e: { message: string; status?: number; code?: string; name?: string }): string {
+  const m = e.message.toLowerCase();
+  // the signup rule in the database rejects anyone outside UC (and the allowlist) with this message
+  if (m.includes("database error saving new user")) return COPY.signin.notUc;
+  if (e.name === "AuthRetryableFetchError" && !e.status) return COPY.errors.offline;
+  if (e.code === "over_email_send_rate_limit" || e.code === "over_request_rate_limit" || e.status === 429) return COPY.signin.tooMany;
+  if (e.code === "email_address_not_authorized") return COPY.signin.notReady;
+  if (e.code === "email_address_invalid" || e.code === "validation_failed") return COPY.signin.badEmail;
+  return COPY.signin.failed;
+}
+
+class PhotoError extends Error {}
+
+async function uploadPhoto(sb: Supabase, path: string, dataUrl: string) {
+  const blob = await (await fetch(dataUrl)).blob();
+  const { error } = await sb.storage.from(PHOTO_BUCKET).upload(path, blob, { contentType: "image/jpeg", cacheControl: "31536000" });
+  if (error) throw new PhotoError(error.message);
+}
+
+// Adds a message to its chat. Drops the grey "sending" copy this device added a moment ago.
+function withMessage(r: Remote, m: MessageRow, dropTemp?: number): Remote {
+  return {
+    ...r,
+    threads: r.threads.map((t) =>
+      t.id !== m.thread_id
+        ? t
+        : {
+            ...t,
+            messages: [
+              ...t.messages.filter(
+                (x) => x.id !== dropTemp && x.id !== m.id && !(x.id < 0 && m.id > 0 && x.sender_id === m.sender_id && x.body === m.body),
+              ),
+              m,
+            ],
+          },
+    ),
+  };
+}
+
+async function fetchContacts(sb: Supabase, uid: string, rows: (ThreadRow & { messages: MessageRow[] })[]): Promise<ThreadData[]> {
+  return Promise.all(
+    rows.map(async (t) => {
+      const theirShared = t.seeker_id === uid ? t.host_shared : t.seeker_shared;
+      if (!theirShared) return { ...t, theirContact: null };
+      const { data } = await sb.rpc("get_contact", { p_thread: t.id });
+      return { ...t, theirContact: data ?? null };
+    }),
+  );
+}
+
+async function fetchThreads(sb: Supabase, uid: string): Promise<ThreadData[]> {
+  const { data, error } = await sb
+    .from("threads")
+    .select("*, messages(*)")
+    .order("created_at", { ascending: false })
+    .order("created_at", { referencedTable: "messages", ascending: true });
+  if (error) throw error;
+  return fetchContacts(sb, uid, data);
+}
+
 export function StoreProvider({ children }: { children: ReactNode }) {
-  const [ready, setReady] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
-  const [posted, setPosted] = useState<Listing[]>([]);
+  const [authReady, setAuthReady] = useState(!supabaseConfigured);
+  const [session, setSession] = useState<Session | null>(null);
+  const [remote, setRemote] = useState<Remote | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [seen, setSeen] = useState<string[]>([]);
-  const [shortlist, setShortlist] = useState<string[]>([]);
-  const [threads, setThreads] = useState<Thread[]>(SEED_THREADS);
-  const [reported, setReported] = useState<string[]>([]);
-  const [onboarded, setOnboarded] = useState(false);
-  const [prefs, setPrefs] = useState<Prefs | null>(null);
-  const [prefsAsked, setPrefsAsked] = useState(false);
   const [showAll, setShowAll] = useState(false);
+  const [uiReady, setUiReady] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
-  const [typingThread, setTypingThread] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const reloadTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const lastRefresh = useRef(0);
+  const threadsRef = useRef<ThreadData[]>([]);
 
-  // Load once on the client, then start saving.
-  /* eslint-disable react-hooks/set-state-in-effect -- one-time hydration from localStorage */
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const p = JSON.parse(raw) as Persisted;
-        setUser(p.user ?? null);
-        setPosted(p.posted ?? []);
-        setFilters({ ...DEFAULT_FILTERS, ...p.filters });
-        setSeen(p.seen ?? []);
-        setShortlist(p.shortlist ?? []);
-        setThreads(p.threads ?? SEED_THREADS);
-        setReported(p.reported ?? []);
-        setOnboarded(p.onboarded ?? false);
-        setPrefs(p.prefs ? { ...DEFAULT_PREFS, ...p.prefs } : null);
-        setPrefsAsked(p.prefsAsked ?? false);
-        setShowAll(p.showAll ?? false);
-      }
-    } catch {
-      // ignore corrupt or unavailable storage
-    }
-    setReady(true);
-  }, []);
-  /* eslint-enable react-hooks/set-state-in-effect */
-
-  useEffect(() => {
-    if (!ready) return;
-    const data: Persisted = { user, posted, filters, seen, shortlist, threads, reported, onboarded, prefs, prefsAsked, showAll };
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    } catch {
-      // storage full or blocked; the demo still works from memory
-    }
-  }, [ready, user, posted, filters, seen, shortlist, threads, reported, onboarded, prefs, prefsAsked, showAll]);
-
-  const listings = useMemo(() => [...posted, ...LISTINGS], [posted]);
+  const uid = session?.user.id ?? null;
+  const email = session?.user.email ?? "";
 
   const showToast = useCallback((msg: string) => {
     setToast(msg);
@@ -151,40 +197,413 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     toastTimer.current = setTimeout(() => setToast(null), 2200);
   }, []);
 
-  const updateThread = useCallback((id: string, fn: (t: Thread) => Thread) => {
-    setThreads((ts) => ts.map((t) => (t.id === id ? fn(t) : t)));
+  const patch = useCallback((fn: (r: Remote) => Remote) => setRemote((r) => (r ? fn(r) : r)), []);
+
+  // ---- who is signed in
+  useEffect(() => {
+    if (!supabaseConfigured) return;
+    const sb = getSupabase();
+    let alive = true;
+    sb.auth.getSession().then(({ data }) => {
+      if (!alive) return;
+      setSession(data.session);
+      setAuthReady(true);
+    });
+    const { data: sub } = sb.auth.onAuthStateChange((_event, s) => setSession(s));
+    return () => {
+      alive = false;
+      sub.subscription.unsubscribe();
+    };
   }, []);
 
-  const addMessage = useCallback(
-    (threadId: string, from: Message["from"], text: string) => {
-      const msg: Message = { id: crypto.randomUUID(), from, text, time: "Now" };
-      updateThread(threadId, (t) => ({ ...t, messages: [...t.messages, msg] }));
+  // ---- per-device settings
+  /* eslint-disable react-hooks/set-state-in-effect -- one-time hydration from localStorage */
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(UI_KEY);
+      if (raw) {
+        const p = JSON.parse(raw) as Partial<UiState>;
+        setFilters({ ...DEFAULT_FILTERS, ...p.filters });
+        setSeen(p.seen ?? []);
+        setShowAll(p.showAll ?? false);
+      }
+    } catch {
+      // ignore corrupt or unavailable storage
+    }
+    setUiReady(true);
+  }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
+
+  useEffect(() => {
+    if (!uiReady) return;
+    try {
+      localStorage.setItem(UI_KEY, JSON.stringify({ filters, seen, showAll } satisfies UiState));
+    } catch {
+      // storage full or blocked; everything still works from memory
+    }
+  }, [uiReady, filters, seen, showAll]);
+
+  // ---- load everything for the signed-in student
+  useEffect(() => {
+    if (!uid) return;
+    let alive = true;
+    (async () => {
+      try {
+        const sb = getSupabase();
+        const [profile, listings, shortlist, threads, reports] = await Promise.all([
+          sb.from("profiles").select("*").eq("id", uid).single(),
+          sb.from("listings").select("*").order("confirmed_at", { ascending: false }).limit(500),
+          sb.from("shortlist").select("listing_id"),
+          fetchThreads(sb, uid),
+          sb.from("reports").select("listing_id"),
+        ]);
+        if (profile.error) throw profile.error;
+        if (listings.error) throw listings.error;
+        if (shortlist.error) throw shortlist.error;
+        if (reports.error) throw reports.error;
+        if (!alive) return;
+        setRemote({
+          uid,
+          email: profile.data.email,
+          name: profile.data.display_name,
+          onboarded: profile.data.onboarded,
+          prefs: toPrefs(profile.data.prefs),
+          prefsAsked: profile.data.prefs_asked,
+          listings: listings.data,
+          shortlist: shortlist.data.map((s) => s.listing_id),
+          threads,
+          reported: reports.data.map((r) => r.listing_id),
+        });
+        setLoadError(null);
+        lastRefresh.current = Date.now();
+      } catch {
+        if (alive) setLoadError(COPY.errors.load);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [uid, attempt]);
+
+  const reload = useCallback(() => {
+    setLoadError(null);
+    setAttempt((n) => n + 1);
+  }, []);
+
+  const reloadThreads = useCallback(async () => {
+    if (!uid) return;
+    try {
+      const threads = await fetchThreads(getSupabase(), uid);
+      patch((r) => (r.uid === uid ? { ...r, threads } : r));
+    } catch {
+      // the next refresh will catch up
+    }
+  }, [uid, patch]);
+
+  const scheduleReloadThreads = useCallback(() => {
+    clearTimeout(reloadTimer.current);
+    reloadTimer.current = setTimeout(() => void reloadThreads(), 400);
+  }, [reloadThreads]);
+
+  const reloadThread = useCallback(
+    async (threadId: string) => {
+      if (!uid) return;
+      const sb = getSupabase();
+      const { data } = await sb.from("threads").select("*, messages(*)").eq("id", threadId).maybeSingle();
+      if (!data) return;
+      const [row] = await fetchContacts(sb, uid, [data]);
+      patch((r) => ({ ...r, threads: r.threads.some((t) => t.id === threadId) ? r.threads.map((t) => (t.id === threadId ? row : t)) : [row, ...r.threads] }));
     },
-    [updateThread],
+    [uid, patch],
   );
+
+  // Pull fresh listings and chats when the student comes back to the tab (phones drop live connections in the background).
+  useEffect(() => {
+    if (!uid) return;
+    const onVisible = async () => {
+      if (document.visibilityState !== "visible" || Date.now() - lastRefresh.current < 30_000) return;
+      lastRefresh.current = Date.now();
+      const { data } = await getSupabase().from("listings").select("*").order("confirmed_at", { ascending: false }).limit(500);
+      if (data) patch((r) => (r.uid === uid ? { ...r, listings: data } : r));
+      void reloadThreads();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [uid, patch, reloadThreads]);
+
+  useEffect(() => {
+    threadsRef.current = remote?.threads ?? [];
+  }, [remote?.threads]);
+
+  // ---- live chat: new messages and sharing changes arrive without a refresh (Realtime respects the same row level security)
+  useEffect(() => {
+    if (!uid) return;
+    const sb = getSupabase();
+    const channel = sb
+      .channel(`roost-${uid}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (p) => {
+        const m = p.new as MessageRow;
+        if (!threadsRef.current.some((t) => t.id === m.thread_id)) scheduleReloadThreads();
+        else patch((r) => withMessage(r, m));
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "threads" }, (p) => {
+        if (p.eventType === "DELETE") {
+          const gone = (p.old as { id?: string }).id;
+          if (gone) patch((r) => ({ ...r, threads: r.threads.filter((t) => t.id !== gone) }));
+          return;
+        }
+        const row = p.new as ThreadRow;
+        const known = threadsRef.current.find((t) => t.id === row.id);
+        // read marks change on every visit, so only act on new chats and on sharing changes
+        if (!known || known.seeker_shared !== row.seeker_shared || known.host_shared !== row.host_shared) void reloadThread(row.id);
+      })
+      .subscribe();
+    return () => {
+      void sb.removeChannel(channel);
+    };
+  }, [uid, patch, reloadThread, scheduleReloadThreads]);
+
+  // ---- sign in and out
+  const requestCode = useCallback(async (address: string) => {
+    if (!supabaseConfigured) return COPY.errors.notSetUp;
+    const { error } = await getSupabase().auth.signInWithOtp({ email: address.trim().toLowerCase(), options: { shouldCreateUser: true } });
+    return error ? authMessage(error) : null;
+  }, []);
+
+  const verifyCode = useCallback(async (address: string, code: string) => {
+    const { error } = await getSupabase().auth.verifyOtp({ email: address.trim().toLowerCase(), token: code, type: "email" });
+    if (!error) return null;
+    return error.name === "AuthRetryableFetchError" && !error.status ? COPY.errors.offline : COPY.signin.wrongCode;
+  }, []);
+
+  const signOut = useCallback(async () => {
+    await getSupabase().auth.signOut();
+    setRemote(null);
+    setFilters(DEFAULT_FILTERS);
+    setSeen([]);
+    setShowAll(false);
+  }, []);
+
+  // ---- listings
+  const remoteListings = remote?.listings;
+  const listings = useMemo(() => (remoteListings ? remoteListings.map((r) => toListing(r, uid)) : []), [remoteListings, uid]);
+  const getListing = useCallback((id: string) => listings.find((l) => l.id === id), [listings]);
+
+  const postListing = useCallback(
+    async (draft: Listing, uploads: ProcessedPhoto[]) => {
+      if (!uid) return null;
+      const sb = getSupabase();
+      const stamp = crypto.randomUUID();
+      const uploaded: string[] = [];
+      try {
+        const photos: string[] = [];
+        const thumbs: string[] = [];
+        for (const [i, u] of uploads.entries()) {
+          const full = `${uid}/${stamp}-${i}.jpg`;
+          const thumb = `${uid}/${stamp}-${i}-t.jpg`;
+          await uploadPhoto(sb, full, u.full);
+          uploaded.push(full);
+          await uploadPhoto(sb, thumb, u.thumb);
+          uploaded.push(thumb);
+          photos.push(full);
+          thumbs.push(thumb);
+        }
+        const row: ListingInsert = {
+          owner_id: uid,
+          title: draft.title,
+          address: draft.address,
+          area: draft.neighborhood,
+          lat: draft.lat,
+          lng: draft.lng,
+          rent: draft.rent,
+          utilities_included: draft.utilitiesIncluded,
+          utilities_estimate: draft.utilitiesEstimate,
+          start_date: draft.startDate,
+          end_date: draft.endDate,
+          bedrooms: draft.bedrooms,
+          furnished: draft.furnished,
+          unit_type: draft.unitType,
+          transfer_type: draft.transferType,
+          description: draft.description,
+          amenities: draft.amenities,
+          sublet_fee: draft.subletFee,
+          fee_split_pct: draft.feeSplitPct,
+          household: (draft.household as unknown as Json | undefined) ?? null,
+          landlord_consent: true,
+          photos,
+          thumbs,
+        };
+        const { data, error } = await sb.from("listings").insert(row).select().single();
+        if (error) throw error;
+        patch((r) => ({ ...r, listings: [data, ...r.listings] }));
+        showToast(COPY.toast.posted);
+        return data.id;
+      } catch (e) {
+        if (uploaded.length) void sb.storage.from(PHOTO_BUCKET).remove(uploaded);
+        showToast(e instanceof PhotoError ? COPY.errors.photoFailed : COPY.errors.postFailed);
+        return null;
+      }
+    },
+    [uid, patch, showToast],
+  );
+
+  const confirmListing = useCallback(
+    async (id: string) => {
+      const at = new Date().toISOString();
+      const { error } = await getSupabase().from("listings").update({ confirmed_at: at }).eq("id", id);
+      if (error) return showToast(COPY.errors.generic);
+      patch((r) => ({ ...r, listings: r.listings.map((l) => (l.id === id ? { ...l, confirmed_at: at } : l)) }));
+      showToast(COPY.toast.confirmed);
+    },
+    [patch, showToast],
+  );
+
+  const removeListing = useCallback(
+    async (id: string) => {
+      const { error } = await getSupabase().from("listings").update({ status: "rented" }).eq("id", id);
+      if (error) return showToast(COPY.errors.generic);
+      patch((r) => ({ ...r, listings: r.listings.filter((l) => l.id !== id), shortlist: r.shortlist.filter((x) => x !== id) }));
+      showToast(COPY.toast.rented);
+    },
+    [patch, showToast],
+  );
+
+  // ---- shortlist (updates instantly, then syncs; rolls back if the save fails)
+  const shortlist = remote?.shortlist ?? [];
+  const setSaved = useCallback(
+    async (id: string, on: boolean) => {
+      if (!uid) return;
+      const sb = getSupabase();
+      patch((r) => ({ ...r, shortlist: on ? (r.shortlist.includes(id) ? r.shortlist : [...r.shortlist, id]) : r.shortlist.filter((x) => x !== id) }));
+      const { error } = on ? await sb.from("shortlist").insert({ user_id: uid, listing_id: id }) : await sb.from("shortlist").delete().eq("user_id", uid).eq("listing_id", id);
+      if (error && error.code !== "23505") {
+        patch((r) => ({ ...r, shortlist: on ? r.shortlist.filter((x) => x !== id) : [...r.shortlist, id] }));
+        showToast(COPY.errors.generic);
+      }
+    },
+    [uid, patch, showToast],
+  );
+
+  // ---- chats
+  const remoteThreads = remote?.threads;
+  const threads = useMemo(() => {
+    if (!remoteThreads || !uid) return [];
+    const last = (t: Thread) => Date.parse(t.messages[t.messages.length - 1]?.createdAt ?? "") || 0;
+    return remoteThreads.map((t) => toThread(t, uid)).sort((a, b) => last(b) - last(a));
+  }, [remoteThreads, uid]);
+
+  const startChat = useCallback(
+    async (listingId: string) => {
+      if (!uid) return null;
+      const existing = threadsRef.current.find((t) => t.listing_id === listingId && t.seeker_id === uid);
+      if (existing) return existing.id;
+      // the database fills in the names, the host and the title itself (so they can't be faked); these are placeholders
+      const { data, error } = await getSupabase()
+        .from("threads")
+        .insert({ listing_id: listingId, seeker_id: uid, listing_title: "", seeker_name: "", host_name: "" })
+        .select("*, messages(*)")
+        .single();
+      if (error) {
+        if (error.code === "23505") {
+          const { data: found } = await getSupabase().from("threads").select("id").eq("listing_id", listingId).eq("seeker_id", uid).maybeSingle();
+          if (found) {
+            await reloadThread(found.id);
+            return found.id;
+          }
+        }
+        showToast(error.message.includes("no longer available") || error.message.includes("your own") ? error.message : COPY.errors.generic);
+        return null;
+      }
+      const row: ThreadData = { ...data, theirContact: null };
+      patch((r) => ({ ...r, threads: [row, ...r.threads] }));
+      return data.id;
+    },
+    [uid, patch, reloadThread, showToast],
+  );
+
+  const sendMessage = useCallback(
+    async (threadId: string, text: string) => {
+      if (!uid) return;
+      const tempId = -Date.now();
+      patch((r) => withMessage(r, { id: tempId, thread_id: threadId, sender_id: uid, kind: "user", body: text, created_at: new Date().toISOString() }));
+      const { data, error } = await getSupabase().from("messages").insert({ thread_id: threadId, sender_id: uid, body: text }).select().single();
+      if (error || !data) {
+        patch((r) => ({ ...r, threads: r.threads.map((t) => (t.id === threadId ? { ...t, messages: t.messages.filter((m) => m.id !== tempId) } : t)) }));
+        showToast(COPY.errors.sendFailed);
+        return;
+      }
+      patch((r) => withMessage(r, data, tempId));
+    },
+    [uid, patch, showToast],
+  );
+
+  const markRead = useCallback(
+    (threadId: string) => {
+      if (!uid) return;
+      patch((r) => ({
+        ...r,
+        threads: r.threads.map((t) => {
+          if (t.id !== threadId) return t;
+          const newest = t.messages.reduce((n, m) => Math.max(n, Date.parse(m.created_at)), 0);
+          const at = new Date(Math.max(Date.now(), newest)).toISOString();
+          return t.seeker_id === uid ? { ...t, seeker_read_at: at } : { ...t, host_read_at: at };
+        }),
+      }));
+      void getSupabase().rpc("mark_thread_read", { p_thread: threadId });
+    },
+    [uid, patch],
+  );
+
+  const shareContact = useCallback(
+    async (threadId: string) => {
+      const { error } = await getSupabase().rpc("share_contact", { p_thread: threadId });
+      if (error) return showToast(COPY.errors.generic);
+      await reloadThread(threadId);
+    },
+    [reloadThread, showToast],
+  );
+
+  const report = useCallback(
+    async (listingId: string, reason: string) => {
+      if (!uid) return;
+      const { error } = await getSupabase().from("reports").insert({ listing_id: listingId, reporter_id: uid, reason });
+      if (error && error.code !== "23505") return showToast(COPY.errors.generic);
+      patch((r) => ({ ...r, reported: r.reported.includes(listingId) ? r.reported : [...r.reported, listingId] }));
+      showToast(COPY.toast.reported);
+    },
+    [uid, patch, showToast],
+  );
+
+  // ---- profile
+  const updateProfile = useCallback(
+    async (values: { prefs?: Json; prefs_asked?: boolean; onboarded?: boolean }) => {
+      if (!uid) return;
+      const { error } = await getSupabase().from("profiles").update(values).eq("id", uid);
+      if (error) showToast(COPY.errors.generic);
+    },
+    [uid, showToast],
+  );
+
+  const unreadCount = threads.filter((t) => t.unread).length;
+  const user: User | null = uid ? { email: remote?.email ?? email, name: remote?.name ?? nameFromEmail(email) } : null;
+  const ready = authReady && (!uid || remote?.uid === uid || loadError !== null);
 
   const store: Store = {
     ready,
+    configured: supabaseConfigured,
+    loadError,
+    reload,
+
     user,
-    signIn: (email) => {
-      const local = email.split("@")[0].replace(/[._-]+/g, " ");
-      const name = local.charAt(0).toUpperCase() + local.slice(1);
-      setUser({ email: email.toLowerCase(), name });
-    },
-    signOut: () => setUser(null),
+    requestCode,
+    verifyCode,
+    signOut,
 
     listings,
-    getListing: (id) => listings.find((l) => l.id === id),
-    addListing: (l) => setPosted((p) => [l, ...p]),
-    confirmListing: (id) => {
-      setPosted((p) => p.map((l) => (l.id === id ? { ...l, confirmedDaysAgo: 0 } : l)));
-      showToast(COPY.toast.confirmed);
-    },
-    removeListing: (id) => {
-      setPosted((p) => p.filter((l) => l.id !== id));
-      setShortlist((s) => s.filter((x) => x !== id));
-      showToast(COPY.toast.rented);
-    },
+    getListing,
+    postListing,
+    confirmListing,
+    removeListing,
 
     filters,
     setFilters,
@@ -197,65 +616,43 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     shortlist,
     toggleSave: (id) => {
       const had = shortlist.includes(id);
-      setShortlist((s) => (had ? s.filter((x) => x !== id) : [...s, id]));
+      void setSaved(id, !had);
       showToast(had ? COPY.toast.unsaved : COPY.toast.saved);
     },
     save: (id) => {
       if (shortlist.includes(id)) return;
-      setShortlist((s) => [...s, id]);
+      void setSaved(id, true);
       showToast(COPY.toast.saved);
     },
-    unsave: (id) => setShortlist((s) => s.filter((x) => x !== id)),
+    unsave: (id) => void setSaved(id, false),
 
     threads,
-    typingThread,
-    unreadCount: threads.filter((t) => t.unread).length,
-    startChat: (listingId) => {
-      const id = `t-${listingId}`;
-      if (!threads.some((t) => t.id === id)) {
-        setThreads((ts) => [
-          { id, listingId, messages: [], unread: false, myContactShared: false, theirContactShared: false },
-          ...ts,
-        ]);
-      }
-      return id;
-    },
-    sendMessage: (threadId, text) => {
-      addMessage(threadId, "me", text);
-      // Fake sublessor reply (with a typing indicator) so the demo feels alive.
-      setTimeout(() => setTypingThread(threadId), 400);
-      setTimeout(() => {
-        setTypingThread(null);
-        addMessage(threadId, "them", REPLIES[Math.floor(Math.random() * REPLIES.length)]);
-      }, 1800);
-    },
-    markRead: (threadId) => updateThread(threadId, (t) => (t.unread ? { ...t, unread: false } : t)),
-    shareContact: (threadId) => {
-      updateThread(threadId, (t) => ({ ...t, myContactShared: true }));
-      addMessage(threadId, "system", "You shared your contact info.");
-      setTimeout(() => {
-        updateThread(threadId, (t) => ({ ...t, theirContactShared: true }));
-        addMessage(threadId, "system", "They shared their contact info too.");
-      }, 1600);
+    unreadCount,
+    startChat,
+    sendMessage,
+    markRead,
+    shareContact,
+
+    reported: remote?.reported ?? [],
+    report,
+
+    onboarded: remote?.onboarded ?? true,
+    finishOnboarding: () => {
+      patch((r) => ({ ...r, onboarded: true }));
+      void updateProfile({ onboarded: true });
     },
 
-    reported,
-    report: (listingId) => {
-      setReported((r) => (r.includes(listingId) ? r : [...r, listingId]));
-      showToast(COPY.toast.reported);
-    },
-
-    onboarded,
-    finishOnboarding: () => setOnboarded(true),
-
-    prefs,
-    prefsAsked,
+    prefs: remote?.prefs ?? null,
+    prefsAsked: remote?.prefsAsked ?? true,
     savePrefs: (p) => {
-      setPrefs(p);
-      setPrefsAsked(true);
+      patch((r) => ({ ...r, prefs: p, prefsAsked: true }));
+      void updateProfile({ prefs: p as unknown as Json, prefs_asked: true });
       showToast(COPY.toast.prefsSaved);
     },
-    skipPrefs: () => setPrefsAsked(true),
+    skipPrefs: () => {
+      patch((r) => ({ ...r, prefsAsked: true }));
+      void updateProfile({ prefs_asked: true });
+    },
     showAll,
     setShowAll,
 

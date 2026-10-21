@@ -85,10 +85,14 @@ export default function ListingPage() {
     if (el) el.scrollBy({ left: dir * el.clientWidth, behavior: "smooth" });
   };
 
-  const message = () => router.push(`/messages/${startChat(l.id)}`);
-  const askAvailable = () => {
-    const tid = startChat(l.id);
-    sendMessage(tid, "Hi! Is this still available?");
+  const message = async () => {
+    const tid = await startChat(l.id);
+    if (tid) router.push(`/messages/${tid}`);
+  };
+  const askAvailable = async () => {
+    const tid = await startChat(l.id);
+    if (!tid) return;
+    void sendMessage(tid, "Hi! Is this still available?");
     router.push(`/messages/${tid}`);
   };
 
@@ -350,12 +354,16 @@ export default function ListingPage() {
             {l.sublessor.detail}
           </p>
         </div>
-        <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">
-          <BadgeCheck className="size-4" /> UC verified
-        </span>
+        {l.isSample ? (
+          <span className="text-xs font-medium text-amber-700 dark:text-amber-300">Sample listing</span>
+        ) : (
+          <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+            <BadgeCheck className="size-4" /> UC verified
+          </span>
+        )}
       </div>
       <p className="pt-2 text-xs text-muted-foreground">
-        Contact info stays hidden until you both choose to share it in chat.
+        {l.isSample ? COPY.empty.sample : "Contact info stays hidden until you both choose to share it in chat."}
       </p>
 
       <div className="flex justify-center pt-4">

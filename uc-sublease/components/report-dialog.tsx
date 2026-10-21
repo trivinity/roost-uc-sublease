@@ -36,7 +36,7 @@ export function ReportButton({ listingId }: { listingId: string }) {
             className="w-full"
             disabled={!reason}
             onClick={() => {
-              report(listingId);
+              void report(listingId, reason);
               setOpen(false);
               setReason("");
             }}
