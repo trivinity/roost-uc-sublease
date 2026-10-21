@@ -60,6 +60,7 @@ export function AddressField({ value, place, onChange, error }: { value: string;
         <input
           className={cn("h-12 w-full rounded-2xl border border-border bg-background px-4 pr-11 text-base outline-none focus:border-primary aria-invalid:border-destructive")}
           aria-invalid={!!error}
+          aria-label="Street address"
           value={value}
           onChange={(e) => onChange(e.target.value, null)}
           onFocus={() => setOpen(true)}

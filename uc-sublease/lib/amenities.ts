@@ -19,4 +19,7 @@ export const AMENITY_LABEL: Record<AmenityId, string> = {
   kitchen: "Large kitchen",
 };
 
+// Shown first in the icon row when a listing is furnished (it replaces the old "Furnished" text tag).
+export const FURNISHED_LABEL = "Furnished";
+
 export const AMENITY_IDS = Object.keys(AMENITY_LABEL) as AmenityId[];

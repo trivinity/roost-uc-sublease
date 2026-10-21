@@ -203,9 +203,11 @@ export default function ListingPage() {
           </button>
         </div>
       </div>
-      <p className="pt-2 text-center text-xs text-muted-foreground">
-        Demo photos from Unsplash. They are not these actual units.
-      </p>
+      {l.isSample && (
+        <p className="pt-2 text-center text-xs text-muted-foreground">
+          Sample listing: demo photos from Unsplash, not the actual unit.
+        </p>
+      )}
 
       <div className="space-y-1 pt-4">
         <p className="text-3xl font-semibold tracking-tight">
@@ -260,15 +262,17 @@ export default function ListingPage() {
             <MessageCircle className="size-5" /> Message
           </Button>
         )}
-        <Button
-          variant="outline"
-          size="lg"
-          onClick={() => toggleSave(l.id)}
-          aria-pressed={saved}
-        >
-          <Bookmark className={cn("size-5", saved && "fill-current")} />{" "}
-          {saved ? "Saved" : "Save"}
-        </Button>
+        {!mine && (
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={() => toggleSave(l.id)}
+            aria-pressed={saved}
+          >
+            <Bookmark className={cn("size-5", saved && "fill-current")} />{" "}
+            {saved ? "Saved" : "Save"}
+          </Button>
+        )}
       </div>
 
       {/* Phones: a sticky action bar keeps the main action under your thumb. */}
@@ -284,18 +288,20 @@ export default function ListingPage() {
             {fmtRange(l.startDate, l.endDate)}
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="icon-lg"
-          className="size-12"
-          onClick={() => toggleSave(l.id)}
-          aria-pressed={saved}
-          aria-label={saved ? "Remove from shortlist" : "Save to shortlist"}
-        >
-          <Bookmark
-            className={cn("size-5", saved && "fill-primary text-primary")}
-          />
-        </Button>
+        {!mine && (
+          <Button
+            variant="outline"
+            size="icon-lg"
+            className="size-12"
+            onClick={() => toggleSave(l.id)}
+            aria-pressed={saved}
+            aria-label={saved ? "Remove from shortlist" : "Save to shortlist"}
+          >
+            <Bookmark
+              className={cn("size-5", saved && "fill-primary text-primary")}
+            />
+          </Button>
+        )}
         {mine ? (
           <Button size="lg" render={<Link href="/mine" />} nativeButton={false}>
             Manage
@@ -321,7 +327,7 @@ export default function ListingPage() {
       </dl>
 
       <div className="mt-5">
-        <AmenityIcons ids={l.amenities} />
+        <AmenityIcons ids={l.amenities} furnished={l.furnished} />
       </div>
 
       <div className="mt-6 space-y-4">
@@ -367,9 +373,11 @@ export default function ListingPage() {
         {l.isSample ? COPY.empty.sample : "Contact info stays hidden until you both choose to share it in chat."}
       </p>
 
-      <div className="flex justify-center pt-4">
-        <ReportButton listingId={l.id} />
-      </div>
+      {!mine && (
+        <div className="flex justify-center pt-4">
+          <ReportButton listingId={l.id} />
+        </div>
+      )}
       <Credits />
     </div>
   );

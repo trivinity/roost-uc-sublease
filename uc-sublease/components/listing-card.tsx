@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronRight, Sofa } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import type { Listing } from "@/lib/types";
 import { fmtMoney, fmtRange } from "@/lib/format";
 import { matchFit } from "@/lib/roommates";
@@ -36,14 +36,7 @@ export function ListingCard({ listing: l, interactive = false, preview = false }
           ))}
         </div>
         <div className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-black/25 to-transparent" />
-        <div className="absolute left-3 top-8 flex gap-1.5">
-          {l.furnished && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-amber-300 px-2.5 py-1 text-xs font-medium text-amber-950">
-              <Sofa className="size-3.5" /> Furnished
-            </span>
-          )}
-          {l.isSample && <span className="inline-flex items-center rounded-full bg-black/55 px-2.5 py-1 text-xs font-medium text-white">Sample</span>}
-        </div>
+        {l.isSample && <span className="absolute left-3 top-8 inline-flex items-center rounded-full bg-black/55 px-2.5 py-1 text-xs font-medium text-white">Sample</span>}
         {!preview && <SaveButton id={l.id} className="absolute right-3 top-8" />}
         {fit && <MatchBadge score={fit.score} className="absolute bottom-3 right-3 shadow-sm" />}
         {insight?.tone === "great" && (
@@ -66,7 +59,7 @@ export function ListingCard({ listing: l, interactive = false, preview = false }
         </p>
         <div className="flex items-center justify-between gap-3 pt-0.5">
           <AreaPill area={l.neighborhood} miles={l.distanceMiles} />
-          <AmenityIcons ids={l.amenities} max={4} size="sm" interactive={false} className="flex-nowrap gap-1.5" />
+          <AmenityIcons ids={l.amenities} furnished={l.furnished} max={4} size="sm" interactive={false} className="flex-nowrap gap-1.5" />
         </div>
       </div>
     </div>

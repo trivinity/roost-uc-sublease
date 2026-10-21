@@ -79,6 +79,14 @@ export const COPY = {
       title: "We can't find that listing",
       body: "It may have been rented. Browse what's available instead.",
     },
+    pageNotFound: {
+      title: "We can't find that page",
+      body: "The link may be old or mistyped. Head back to browsing.",
+    },
+    crashed: {
+      title: "Something went wrong",
+      body: "That page hit a snag. Try again, or head back to browsing.",
+    },
   },
   report: { prompt: "What's the issue?" },
 } as const;

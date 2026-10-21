@@ -13,6 +13,7 @@ import {
   TERMS,
 } from "@/lib/filters";
 import { fmtMoney } from "@/lib/format";
+import { rankByFit } from "@/lib/ranking";
 import { useStore } from "@/lib/store";
 import type { Filters } from "@/lib/types";
 import { Chip } from "./chip";
@@ -95,10 +96,11 @@ const BEDROOMS: { label: string; value: number | null }[] = [
 
 // One filter state (in the store) feeds both the deck and the list; this is the only UI that edits it.
 export function FilterButton() {
-  const { filters, setFilters, listings } = useStore();
+  const { filters, setFilters, listings, prefs, showAll } = useStore();
   const [open, setOpen] = useState(false);
   const count = activeFilterCount(filters);
-  const matches = filterListings(listings, filters).length;
+  // same count the list shows: poor roommate fits stay hidden until "Show all"
+  const matches = rankByFit(filterListings(listings, filters), prefs, showAll).listings.length;
   const patch = (p: Partial<Filters>) => setFilters({ ...filters, ...p });
 
   return (

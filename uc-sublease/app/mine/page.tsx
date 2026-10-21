@@ -1,10 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { CheckCircle2, Trash2 } from "lucide-react";
+import { CheckCircle2, KeyRound } from "lucide-react";
 import { ListingRow } from "@/components/listing-row";
 import { Button } from "@/components/ui/button";
-import { freshness } from "@/lib/format";
 import { useStore } from "@/lib/store";
 import { COPY } from "@/lib/copy";
 
@@ -40,7 +39,6 @@ export default function MyListingsPage() {
       ) : (
         <div className="space-y-4">
           {mine.map((l) => {
-            const fresh = freshness(l.confirmedDaysAgo).tone === "good";
             return (
               <div key={l.id} className="space-y-2">
                 <ListingRow listing={l} mine />
@@ -52,7 +50,9 @@ export default function MyListingsPage() {
                     disabled={l.confirmedDaysAgo === 0}
                   >
                     <CheckCircle2 className="size-4" />{" "}
-                    {fresh ? "Confirmed today" : "Still available"}
+                    {l.confirmedDaysAgo === 0
+                      ? "Confirmed today"
+                      : "Still available"}
                   </Button>
                   <Button
                     variant="ghost"
@@ -60,7 +60,7 @@ export default function MyListingsPage() {
                     className="text-muted-foreground"
                     onClick={() => removeListing(l.id)}
                   >
-                    <Trash2 className="size-4" /> Mark as rented
+                    <KeyRound className="size-4" /> Mark as rented
                   </Button>
                 </div>
               </div>

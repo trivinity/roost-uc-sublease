@@ -7,7 +7,7 @@ import {
   EyeOff,
   Lock,
   MessageCircle,
-  Phone,
+  Mail,
   Send,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -18,11 +18,18 @@ import { cn } from "@/lib/utils";
 import { Photo } from "./photo";
 import { COPY } from "@/lib/copy";
 
+// One set for students asking about a place, one for the host answering.
 const QUICK = [
   "Is it still available?",
   "Can I tour this week?",
   "Does your landlord allow subletting?",
   "Is the rent negotiable?",
+];
+const HOST_QUICK = [
+  "Yes, it's still available",
+  "When would you like to tour?",
+  "The landlord has approved subletting",
+  "I can send more photos",
 ];
 
 export function MessagesView({ activeId }: { activeId?: string }) {
@@ -141,6 +148,21 @@ function ChatThread({ thread }: { thread: Thread }) {
       : "",
   );
   const bottom = useRef<HTMLDivElement>(null);
+  const input = useRef<HTMLInputElement>(null);
+  const quick = thread.role === "host" ? HOST_QUICK : QUICK;
+  // system lines are written once for both people; show them from the viewer's side
+  const tidy = (t: string) =>
+    user
+      ? t
+          .replace(
+            `${user.name} shared their contact info too.`,
+            "You shared your contact info too.",
+          )
+          .replace(
+            `${user.name} shared their contact info.`,
+            "You shared your contact info.",
+          )
+      : t;
 
   useEffect(() => {
     if (thread.unread) markRead(thread.id);
@@ -169,7 +191,10 @@ function ChatThread({ thread }: { thread: Thread }) {
           <ArrowLeft className="size-5" />
         </Link>
         {l ? (
-          <Link href={`/listing/${l.id}`} className="flex min-w-0 flex-1 items-center gap-3">
+          <Link
+            href={`/listing/${l.id}`}
+            className="flex min-w-0 flex-1 items-center gap-3"
+          >
             <div className="size-10 shrink-0 overflow-hidden rounded-xl">
               <Photo listing={l} className="size-full" thumb />
             </div>
@@ -183,7 +208,9 @@ function ChatThread({ thread }: { thread: Thread }) {
         ) : (
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold">{other}</p>
-            <p className="truncate text-xs text-muted-foreground">{thread.listingTitle} · no longer listed</p>
+            <p className="truncate text-xs text-muted-foreground">
+              {thread.listingTitle} · no longer listed
+            </p>
           </div>
         )}
       </header>
@@ -197,7 +224,11 @@ function ChatThread({ thread }: { thread: Thread }) {
 
       <p className="border-b border-border px-4 py-2 text-center text-xs text-muted-foreground">
         {COPY.empty.retention}
-        {l?.isSample && <span className="block text-amber-700 dark:text-amber-300">{COPY.empty.sample}</span>}
+        {l?.isSample && (
+          <span className="block text-amber-700 dark:text-amber-300">
+            {COPY.empty.sample}
+          </span>
+        )}
       </p>
 
       <div className="flex-1 space-y-2 overflow-y-auto px-4 py-4">
@@ -212,7 +243,7 @@ function ChatThread({ thread }: { thread: Thread }) {
               key={m.id}
               className="py-1 text-center text-xs text-muted-foreground"
             >
-              {m.text}
+              {tidy(m.text)}
             </p>
           ) : (
             <div
@@ -238,11 +269,14 @@ function ChatThread({ thread }: { thread: Thread }) {
 
       {!draft && thread.messages.length < 6 && (
         <div className="flex gap-2 overflow-x-auto px-3 pb-1 pt-3 [scrollbar-width:none]">
-          {QUICK.map((q) => (
+          {quick.map((q) => (
             <button
               key={q}
               type="button"
-              onClick={() => setDraft(q)}
+              onClick={() => {
+                setDraft(q);
+                input.current?.focus();
+              }}
               className="shrink-0 rounded-full border border-border px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:border-primary hover:text-brand"
             >
               {q}
@@ -255,6 +289,7 @@ function ChatThread({ thread }: { thread: Thread }) {
         className="flex items-center gap-2 border-t border-border p-3"
       >
         <input
+          ref={input}
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           placeholder="Message"
@@ -292,7 +327,7 @@ function ContactPanel({
       <div className="flex items-center justify-between gap-3">
         <p className="flex items-center gap-2 text-muted-foreground">
           {thread.myContactShared ? (
-            <Phone className="size-4" />
+            <Mail className="size-4" />
           ) : (
             <Lock className="size-4" />
           )}
@@ -308,12 +343,14 @@ function ContactPanel({
       </div>
       <p className="flex items-center gap-2 text-muted-foreground">
         {thread.theirContactShared ? (
-          <Phone className="size-4" />
+          <Mail className="size-4" />
         ) : (
           <EyeOff className="size-4" />
         )}
         {thread.theirContactShared ? (
-          <span className="text-foreground">{thread.theirContact ?? "Loading…"}</span>
+          <span className="text-foreground">
+            {thread.theirContact ?? "Loading…"}
+          </span>
         ) : (
           `${first}'s contact info is hidden until they share it`
         )}

@@ -206,7 +206,7 @@ export function Credits() {
   return (
     <p className="py-8 text-center text-xs text-muted-foreground">
       Sample listings use made-up details · Photos from Unsplash · Interface details from{" "}
-      <a href="https://www.rareui.com" target="_blank" rel="noreferrer" className="underline underline-offset-2">
+      <a href="https://www.rareui.com" target="_blank" rel="noreferrer" className="inline-block py-2 underline underline-offset-2">
         Rare UI
       </a>
     </p>

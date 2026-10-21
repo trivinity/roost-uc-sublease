@@ -78,6 +78,7 @@ export interface Thread {
   listingId: string;
   listingTitle?: string; // live chats; the offline demo reads it from the listing instead
   otherName?: string; // the person on the other end
+  role?: "seeker" | "host"; // which side the signed-in student is on (live chats only)
   messages: Message[];
   unread: boolean;
   myContactShared: boolean;

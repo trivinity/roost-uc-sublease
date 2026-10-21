@@ -11,7 +11,9 @@ npm run dev      # http://localhost:3000
 npm run build    # production build check
 ```
 
-Sign in with a UC address; a code is emailed to it. Per-device settings (filters, cards you already swiped) are kept in localStorage key `roost-ui-v3`; everything else lives in Supabase.
+Sign in with a UC address; a code is emailed to it.
+
+**Try every screen without an account:** `NEXT_PUBLIC_MOCK_BACKEND=1 npm run dev` swaps in an in-memory fake backend (sample listings, two chats, two of your own listings). Sign in with any `@mail.uc.edu` address and the code `123456`. It exists only for local UI testing (`lib/supabase/mock.ts`) and is left out of normal builds. Per-device settings (filters, cards you already swiped) are kept in localStorage key `roost-ui-v3`; everything else lives in Supabase.
 
 ## The one-line switch
 

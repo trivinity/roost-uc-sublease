@@ -67,7 +67,24 @@ function FitBounds({ points }: { points: [number, number][] }) {
   const map = useMap();
   useEffect(() => {
     if (points.length === 0) return;
-    map.fitBounds(L.latLngBounds(points), { padding: [56, 56], maxZoom: 14 });
+    const box = map.getContainer();
+    const fit = () => {
+      map.invalidateSize();
+      map.fitBounds(L.latLngBounds(points), { padding: [56, 56], maxZoom: 14, animate: false });
+    };
+    if (box.clientHeight > 0) {
+      fit();
+      return;
+    }
+    // laid out later (hidden tab, sheet still opening): frame it as soon as it has a size, instead of staying zoomed out
+    const ro = new ResizeObserver(() => {
+      if (box.clientHeight > 0) {
+        fit();
+        ro.disconnect();
+      }
+    });
+    ro.observe(box);
+    return () => ro.disconnect();
   }, [map, points]);
   return null;
 }

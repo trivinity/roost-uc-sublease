@@ -53,9 +53,8 @@ export function ListingRow({ listing: l, mine }: { listing: Listing; mine?: bool
           <Pill>
             {l.unitType === "room" ? "Room" : "Whole unit"} · {bedroomLabel(l.bedrooms)}
           </Pill>
-          {l.furnished && <Pill className="bg-amber-100 text-amber-900 dark:bg-amber-400/15 dark:text-amber-300">Furnished</Pill>}
         </div>
-        <AmenityIcons ids={l.amenities} max={6} size="sm" interactive={false} className="gap-1.5 pt-2" />
+        <AmenityIcons ids={l.amenities} furnished={l.furnished} max={6} size="sm" interactive={false} className="gap-1.5 pt-2" />
         <div className="pt-2">
           <Freshness {...f} />
         </div>

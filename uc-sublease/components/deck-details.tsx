@@ -61,7 +61,7 @@ export function DeckDetails({ listing: l }: { listing: Listing }) {
           ))}
         </dl>
 
-        <AmenityIcons ids={l.amenities} />
+        <AmenityIcons ids={l.amenities} furnished={l.furnished} />
 
         <GettingAround listing={l} />
 

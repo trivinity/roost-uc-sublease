@@ -17,7 +17,7 @@ export const PHOTO_BUCKET = "listing-photos";
 
 // Sample listings point at files in /public; student uploads are paths inside the storage bucket.
 export function photoUrl(path: string): string {
-  if (path.startsWith("/") || path.startsWith("http") || path.startsWith("data:")) return path;
+  if (path.startsWith("/") || path.startsWith("http") || path.startsWith("data:") || path.startsWith("blob:")) return path;
   return `${SUPABASE_URL}/storage/v1/object/public/${PHOTO_BUCKET}/${path}`;
 }
 
@@ -95,6 +95,7 @@ export function toThread(t: ThreadData, userId: string): Thread {
     listingId: t.listing_id,
     listingTitle: t.listing_title,
     otherName: iAmSeeker ? t.host_name : t.seeker_name,
+    role: iAmSeeker ? "seeker" : "host",
     messages,
     unread: !!lastIncoming && Date.parse(lastIncoming.createdAt ?? "") > Date.parse(readAt),
     myContactShared: iAmSeeker ? t.seeker_shared : t.host_shared,

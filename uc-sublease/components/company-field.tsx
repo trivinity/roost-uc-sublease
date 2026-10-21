@@ -122,6 +122,7 @@ export function CompanyField({
             setText(e.target.value);
             setSearched(false);
           }}
+          aria-label="Search any company on Google Maps"
           placeholder="Or search any company on Google Maps"
           autoComplete="off"
         />

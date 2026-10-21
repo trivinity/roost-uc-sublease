@@ -41,7 +41,9 @@ export async function GET(req: NextRequest) {
         lng: Number(r.lon),
       };
     });
-    return NextResponse.json({ results });
+    // the free service often returns the same address twice (building and address records)
+    const unique = results.filter((r, i) => results.findIndex((x) => x.label === r.label) === i);
+    return NextResponse.json({ results: unique });
   } catch {
     return NextResponse.json({ results: [], error: "lookup_failed" });
   }

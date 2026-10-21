@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Roost: verified student subleases near UC",
+  title: { default: "Roost: verified student subleases near UC", template: "%s | Roost" },
   description: "Demo prototype of a verified student sublease marketplace for University of Cincinnati students.",
 };
 
@@ -28,6 +28,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <head>
         {/* Set the theme class before first paint so dark mode never flashes white. */}
+        {/* A plain inline script (not next/script) so it runs while the page is parsed. React 19 logs a dev-only notice about it; it is harmless. */}
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){try{var t=localStorage.getItem('roost-theme')||'system';var d=t==='dark'||(t==='system'&&matchMedia('(prefers-color-scheme: dark)').matches);if(d)document.documentElement.classList.add('dark')}catch(e){}})()`,

@@ -186,7 +186,11 @@ export default function PostPage() {
     if (!uploads.length) err.photos = COPY.errors.photos;
     if (!consent) err.consent = COPY.post.consent;
     setErrors(err);
-    if (Object.keys(err).length) return;
+    if (Object.keys(err).length) {
+      // on a phone the submit button is far below the mistakes, so bring the first one into view
+      setTimeout(() => document.querySelector('form [aria-invalid="true"], form .text-destructive')?.scrollIntoView({ behavior: "smooth", block: "center" }), 60);
+      return;
+    }
 
     setPosting(true);
     const id = await postListing(draft, uploads);
