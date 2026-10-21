@@ -52,8 +52,6 @@ scripts/sync-shared.mjs
 - Not included, same as the web demo: payments, real auth, maps.
 - Photos are free Unsplash images used as placeholders.
 
-## Status of the new features (web first)
+## Status of the new features
 
-Ported to the phone app: distance filter, List/Map toggle (native only), icon amenities, nearby stops, roommate fit on listings, rank by fit with Show all, sublet fee on listings and in compare.
-
-Not yet ported (web only): the roommate **preferences screen** (so there is no way to set preferences on the phone yet), address lookup and the fee-split slider on the Post screen (the phone Post screen still picks the nearest area), and the household ratings and amenity picker on Post.
+The phone app has the same features as the web app (distance filter, List/Map toggle (native only), icon amenities, nearby stops, roommate preferences and fit ranking with Show all, address lookup, sublet fee split) except **photo upload** (web only for now). The map and address lookup are untested on a real device.

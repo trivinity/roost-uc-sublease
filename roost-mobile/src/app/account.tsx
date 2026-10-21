@@ -27,6 +27,16 @@ export default function Account() {
           </View>
         </View>
 
+        <Button
+          title="Roommate preferences"
+          icon="options-outline"
+          variant="outline"
+          onPress={() => {
+            router.dismiss();
+            router.push("/preferences");
+          }}
+        />
+
         <H1 style={{ fontSize: 22 }}>My listings</H1>
         <Muted style={{ marginTop: -10 }}>Keep them fresh so students know they&apos;re still available.</Muted>
 

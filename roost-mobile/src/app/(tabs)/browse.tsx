@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
-import { Pressable, Text } from "react-native";
-import { FlatList, ScrollView, View } from "react-native";
+import { Pressable, Text , FlatList, ScrollView, View } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { FilterButton } from "@/components/FilterButton";
 import { FitToggle } from "@/components/FitToggle";

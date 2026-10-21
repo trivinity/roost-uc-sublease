@@ -6,7 +6,7 @@ import type { Listing } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 // Listing photo that fills its box. Shows a soft shimmer until the image has loaded, then fades it in.
-export function Photo({ listing, index = 0, className, priority, vtName }: { listing: Listing; index?: number; className?: string; priority?: boolean; vtName?: string }) {
+export function Photo({ listing, index = 0, className, priority, vtName, thumb }: { listing: Listing; index?: number; className?: string; priority?: boolean; vtName?: string; thumb?: boolean }) {
   const [loaded, setLoaded] = useState(false);
   return (
     <div className={cn("relative overflow-hidden bg-muted", !loaded && "animate-pulse", className)} style={vtName ? { viewTransitionName: vtName } : undefined} data-vt={vtName}>
@@ -15,7 +15,7 @@ export function Photo({ listing, index = 0, className, priority, vtName }: { lis
         ref={(el) => {
           if (el?.complete) setLoaded(true);
         }}
-        src={listing.photos[index] ?? listing.photos[0]}
+        src={(thumb ? listing.thumbs?.[index] : undefined) ?? listing.photos[index] ?? listing.photos[0]}
         alt={`${listing.title}, photo ${index + 1}`}
         fill
         sizes="(min-width: 768px) 448px, 100vw"

@@ -1,27 +1,24 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons , MaterialCommunityIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useState } from "react";
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Switch, Text, TextInput, View } from "react-native";
 import { Frame } from "@/components/TopBar";
 import { Button, Chip, H1, Muted } from "@/components/ui";
 import { COPY } from "@/lib/copy";
+import Slider from "@react-native-community/slider";
+import { AddressField, type Place } from "@/components/AddressField";
+import { AMENITY_ICONS } from "@/components/AmenityIcons";
+import { CheckRow, RatingScale } from "@/components/RatingScale";
+import { AMENITY_IDS, AMENITY_LABEL } from "@/lib/amenities";
+import { TRAITS } from "@/lib/roommates";
 import { TERMS } from "@/lib/filters";
 import { milesFromUC } from "@/lib/geo";
-import { TRANSFER_LABEL, TRANSFER_SHORT } from "@/lib/format";
+import { TRANSFER_LABEL, TRANSFER_SHORT , feeShares, fmtMoney0 } from "@/lib/format";
 import { haptic } from "@/lib/haptics";
 import { useStore } from "@/lib/store";
 import { useColors } from "@/lib/theme";
-import type { Listing, TransferType, UnitType } from "@/lib/types";
+import type { AmenityId, Household, Listing, TransferType, UnitType } from "@/lib/types";
 
-// Simple version for now: pick the nearest area (approximate center). The web app looks up the exact address.
-const AREAS: Record<string, { lat: number; lng: number }> = {
-  Uptown: { lat: 39.1315, lng: -84.5175 },
-  Clifton: { lat: 39.1412, lng: -84.5215 },
-  Corryville: { lat: 39.1345, lng: -84.5105 },
-  "Over-the-Rhine": { lat: 39.1125, lng: -84.5148 },
-  Northside: { lat: 39.1745, lng: -84.544 },
-  Norwood: { lat: 39.159, lng: -84.454 },
-};
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
@@ -40,7 +37,11 @@ export default function Post() {
   const { addListing, showToast } = useStore();
   const [title, setTitle] = useState("");
   const [address, setAddress] = useState("");
-  const [hood, setHood] = useState<string>("Uptown");
+  const [place, setPlace] = useState<Place | null>(null);
+  const [amenities, setAmenities] = useState<AmenityId[]>([]);
+  const [household, setHousehold] = useState<Household>({ roommates: 2, cleanliness: 3, noise: 3, social: 2, guests: 2, sleep: 3, approachability: 3, smokeFree: true, cat: false, dog: false });
+  const [fee, setFee] = useState("");
+  const [coverPct, setCoverPct] = useState(50); // share of the sublet fee the current tenant (you) will cover
   const [rent, setRent] = useState("");
   const [utilitiesIncluded, setUtilitiesIncluded] = useState(true);
   const [utilities, setUtilities] = useState("");
@@ -54,10 +55,15 @@ export default function Post() {
   const [consent, setConsent] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  const feeNum = Math.max(0, Number(fee) || 0);
+  const shares = feeShares(feeNum, 100 - coverPct);
+  const setH = (id: keyof Household, v: number | boolean) => setHousehold((h) => ({ ...h, [id]: v }));
+  const toggleAmenity = (id: AmenityId) => setAmenities((a) => (a.includes(id) ? a.filter((x) => x !== id) : [...a, id]));
+
   const submit = () => {
     const err: Record<string, string> = {};
     if (!title.trim()) err.title = COPY.post.title;
-    if (!address.trim()) err.address = COPY.post.address;
+    if (!place) err.address = COPY.post.address;
     if (!(Number(rent) > 0)) err.rent = COPY.post.rent;
     if (!utilitiesIncluded && (utilities === "" || !(Number(utilities) >= 0))) err.utilities = COPY.post.utilities;
     if (!DATE.test(start)) err.start = COPY.post.start;
@@ -73,11 +79,12 @@ export default function Post() {
       id: `mine-${Date.now()}`,
       title: title.trim(),
       address: address.trim(),
-      neighborhood: hood,
-      lat: AREAS[hood].lat,
-      lng: AREAS[hood].lng,
-      subletFee: 0,
-      feeSplitPct: 0,
+      neighborhood: place!.area || "Near UC",
+      lat: place!.lat,
+      lng: place!.lng,
+      subletFee: feeNum,
+      feeSplitPct: 100 - coverPct,
+      household: unitType === "room" ? household : undefined,
       rent: Number(rent),
       utilitiesIncluded,
       utilitiesEstimate: utilitiesIncluded ? 0 : Number(utilities),
@@ -87,9 +94,9 @@ export default function Post() {
       furnished,
       unitType,
       transferType: transfer,
-      distanceMiles: milesFromUC(AREAS[hood].lat, AREAS[hood].lng),
+      distanceMiles: milesFromUC(place!.lat, place!.lng),
       description: description.trim() || "No description yet.",
-      amenities: [],
+      amenities,
       landlordConsent: true,
       confirmedDaysAgo: 0,
       photos: ["/photos/living-3.jpg", "/photos/bedroom-2.jpg", "/photos/kitchen-5.jpg"],
@@ -132,17 +139,18 @@ export default function Post() {
           <Field label="Headline" error={errors.title}>
             <TextInput value={title} onChangeText={setTitle} placeholder="Sunny room near campus" placeholderTextColor={c.muted} style={input(errors.title)} />
           </Field>
-          <Field label="Street address" error={errors.address}>
-            <TextInput value={address} onChangeText={setAddress} placeholder="123 Example St" placeholderTextColor={c.muted} style={input(errors.address)} />
+          <Field label="Street address">
+            <AddressField
+              value={address}
+              place={place}
+              onChange={(text, p) => {
+                setAddress(text);
+                setPlace(p);
+              }}
+              error={errors.address}
+            />
           </Field>
-
-          <Field label="Neighborhood">
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-              {Object.keys(AREAS).map((n) => (
-                <Chip key={n} label={n} active={hood === n} onPress={() => setHood(n)} />
-              ))}
-            </View>
-          </Field>
+          <Muted style={{ fontSize: 12, marginTop: -12 }}>We measure the distance from the UC campus automatically.</Muted>
 
           <Field label="Rent per month ($)" error={errors.rent}>
             <TextInput value={rent} onChangeText={setRent} keyboardType="number-pad" placeholder="650" placeholderTextColor={c.muted} style={input(errors.rent)} />
@@ -216,6 +224,57 @@ export default function Post() {
             <Muted style={{ fontSize: 12 }}>{TRANSFER_LABEL[transfer]}</Muted>
           </Field>
 
+          <Field label="Amenities">
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+              {AMENITY_IDS.map((id) => {
+                const on = amenities.includes(id);
+                return (
+                  <Pressable
+                    key={id}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: on }}
+                    onPress={() => {
+                      haptic();
+                      toggleAmenity(id);
+                    }}
+                    style={{ width: "31%", alignItems: "center", gap: 6, paddingVertical: 12, paddingHorizontal: 4, borderRadius: 16, borderWidth: 1, borderColor: on ? c.brand : c.border, backgroundColor: on ? c.soft : c.card }}
+                  >
+                    <MaterialCommunityIcons name={AMENITY_ICONS[id]} size={22} color={on ? c.brandText : c.muted} />
+                    <Text style={{ color: on ? c.brandText : c.muted, fontSize: 11, textAlign: "center" }}>{AMENITY_LABEL[id]}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </Field>
+
+          {unitType === "room" && (
+            <View style={{ gap: 18, borderWidth: 1, borderColor: c.border, borderRadius: 24, padding: 18 }}>
+              <View>
+                <Text style={{ color: c.ink, fontSize: 17, fontWeight: "700" }}>Your household</Text>
+                <Muted>Rate the people already living there. Students see how well it fits them.</Muted>
+              </View>
+              <Field label="Other people living there">
+                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                  {[1, 2, 3, 4, 5, 6].map((n) => (
+                    <Chip key={n} label={String(n)} active={household.roommates === n} onPress={() => setH("roommates", n)} />
+                  ))}
+                </View>
+              </Field>
+              {TRAITS.map((t) => (
+                <RatingScale key={t.id} def={t} value={household[t.id]} onChange={(v) => setH(t.id, v)} />
+              ))}
+              <CheckRow checked={household.smokeFree} onChange={(v) => setH("smokeFree", v)}>
+                Smoke-free home
+              </CheckRow>
+              <CheckRow checked={household.cat} onChange={(v) => setH("cat", v)}>
+                There&apos;s a cat
+              </CheckRow>
+              <CheckRow checked={household.dog} onChange={(v) => setH("dog", v)}>
+                There&apos;s a dog
+              </CheckRow>
+            </View>
+          )}
+
           <Field label="Description (optional)">
             <TextInput
               value={description}
@@ -241,6 +300,34 @@ export default function Post() {
               <Text style={{ flex: 1, color: c.ink, fontSize: 15 }}>My lease allows subletting / I have landlord consent.</Text>
             </Pressable>
             {errors.consent ? <Text style={{ color: "#ef4444", fontSize: 13 }}>{errors.consent}</Text> : null}
+
+            {/* appears once the landlord-consent box is ticked */}
+            {consent && (
+              <View style={{ gap: 14, borderWidth: 1, borderColor: c.border, borderRadius: 18, padding: 16, backgroundColor: c.card }}>
+                <Field label="What is the sublet fee? ($)">
+                  <TextInput value={fee} onChangeText={setFee} keyboardType="number-pad" placeholder="0 if your landlord doesn't charge one" placeholderTextColor={c.muted} style={input()} />
+                </Field>
+                {feeNum > 0 && (
+                  <View style={{ gap: 10 }}>
+                    <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                      <Text style={{ color: c.ink, fontWeight: "600", flex: 1 }}>Will you split it? How much will you cover?</Text>
+                      <Text style={{ color: c.brandText, fontWeight: "700" }}>{coverPct}%</Text>
+                    </View>
+                    <Slider minimumValue={0} maximumValue={100} step={5} value={coverPct} onValueChange={setCoverPct} minimumTrackTintColor={c.brand} thumbTintColor={c.brand} accessibilityLabel="Share of the sublet fee you cover" />
+                    <View style={{ flexDirection: "row", gap: 10 }}>
+                      <View style={{ flex: 1, backgroundColor: c.soft, borderRadius: 14, padding: 12 }}>
+                        <Text style={{ color: c.muted, fontSize: 12 }}>You cover</Text>
+                        <Text style={{ color: c.ink, fontSize: 18, fontWeight: "700" }}>{fmtMoney0(shares.tenant)}</Text>
+                      </View>
+                      <View style={{ flex: 1, backgroundColor: c.soft, borderRadius: 14, padding: 12 }}>
+                        <Text style={{ color: c.muted, fontSize: 12 }}>Subletter pays</Text>
+                        <Text style={{ color: c.ink, fontSize: 18, fontWeight: "700" }}>{fmtMoney0(shares.subletter)}</Text>
+                      </View>
+                    </View>
+                  </View>
+                )}
+              </View>
+            )}
           </View>
 
           <Button title="Post listing" size="lg" onPress={submit} />

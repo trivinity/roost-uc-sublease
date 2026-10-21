@@ -58,7 +58,8 @@ export interface Listing {
   propertyReviews?: PropertyReviews;
   landlordConsent: boolean;
   confirmedDaysAgo: number;
-  photos: string[]; // image paths under /public
+  photos: string[]; // image paths under /public, or compressed data URLs for photos a student uploaded
+  thumbs?: string[]; // small versions of the same photos, used in lists so they load fast
   sublessor: Sublessor;
 }
 

@@ -108,7 +108,7 @@ export function CompareTable({ listings }: { listings: Listing[] }) {
         {listings.map((l) => (
           <div key={l.id} className="space-y-2 pb-3">
             <div className="aspect-[4/3] overflow-hidden rounded-2xl">
-              <Photo listing={l} className="size-full" />
+              <Photo listing={l} className="size-full" thumb />
             </div>
             <p className="line-clamp-2 text-sm font-medium">{l.title}</p>
           </div>

@@ -13,7 +13,7 @@ SplashScreen.preventAutoHideAsync();
 
 // Sends people to sign-in, then to the welcome slides, before they see the app.
 function Gate() {
-  const { ready, user, onboarded } = useStore();
+  const { ready, user, onboarded, prefsAsked } = useStore();
   const segments = useSegments();
   const router = useRouter();
   const first = segments[0] as string | undefined;
@@ -25,10 +25,13 @@ function Gate() {
       if (first !== "signin") router.replace("/signin");
     } else if (!onboarded) {
       if (first !== "welcome") router.replace("/welcome");
+    } else if (!prefsAsked) {
+      // after the welcome slides, a minute of roommate preference questions (skippable)
+      if (first !== "preferences") router.replace("/preferences");
     } else if (first === "signin" || first === "welcome") {
       router.replace("/");
     }
-  }, [ready, user, onboarded, first, router]);
+  }, [ready, user, onboarded, prefsAsked, first, router]);
 
   return null;
 }
@@ -52,6 +55,7 @@ export default function RootLayout() {
               <Stack.Screen name="welcome" options={{ animation: "fade", gestureEnabled: false }} />
               <Stack.Screen name="listing/[id]" />
               <Stack.Screen name="chat/[id]" />
+              <Stack.Screen name="preferences" options={{ animation: "fade" }} />
               <Stack.Screen name="account" options={{ presentation: "modal" }} />
             </Stack>
             <Toast />

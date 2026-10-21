@@ -59,6 +59,7 @@ export const COPY = {
       body: "Pick a chat, or message a sublessor from any listing.",
     },
     startChat: "Say hi! We drafted a first message for you.",
+    retention: "Chats are kept for 30 days for safety, then deleted.",
     notFound: {
       title: "We can't find that listing",
       body: "It may have been rented. Browse what's available instead.",

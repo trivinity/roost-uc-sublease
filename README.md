@@ -8,6 +8,11 @@ A clickable prototype for a senior design capstone: a swipe-based sublease marke
 | [`roost-mobile/`](roost-mobile) | The native phone app (Expo / React Native). Test it on your phone with the Expo Go app. See its README. |
 | [`roost-video/`](roost-video) | The motion-graphics promo, built with [Remotion](https://www.remotion.dev). The finished video is `roost-video/out/roost-promo.mp4`. |
 
+## Docs
+
+- [`docs/CHECKLIST.md`](docs/CHECKLIST.md): weekly checklist for advisor check-ins
+- [`docs/advisor-meeting-2026-10-21.md`](docs/advisor-meeting-2026-10-21.md): status and talking points
+
 ## Live demo
 
 **https://roost-uc-sublease.vercel.app** (the web app, hosted on Vercel). Sign in with any `@mail.uc.edu` email and the demo code `123456`. Data is fake and is saved only in your own browser.

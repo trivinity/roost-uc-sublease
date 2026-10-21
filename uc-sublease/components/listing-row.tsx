@@ -33,7 +33,7 @@ export function ListingRow({ listing: l, mine }: { listing: Listing; mine?: bool
       className="group flex h-full min-w-0 flex-col gap-3 rounded-3xl border border-border bg-card p-3 shadow-lift transition-all duration-200 hover:-translate-y-0.5 hover:shadow-float sm:flex-row sm:gap-4"
     >
       <div data-row-photo className="relative aspect-[16/10] w-full shrink-0 overflow-hidden rounded-2xl sm:aspect-auto sm:size-32 sm:w-32">
-        <Photo listing={l} className="size-full" />
+        <Photo listing={l} className="size-full" thumb />
         {!mine && <SaveButton id={l.id} className="absolute right-2 top-2" />}
         {fit && <MatchBadge score={fit.score} className="absolute bottom-2 left-2 shadow-sm" />}
       </div>

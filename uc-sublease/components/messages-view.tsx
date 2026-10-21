@@ -67,7 +67,7 @@ export function MessagesView({ activeId }: { activeId?: string }) {
                     )}
                   >
                     <div className="size-12 shrink-0 overflow-hidden rounded-full">
-                      <Photo listing={l} className="size-full" />
+                      <Photo listing={l} className="size-full" thumb />
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-baseline justify-between gap-2">
@@ -182,7 +182,7 @@ function ChatThread({ thread }: { thread: Thread }) {
           className="flex min-w-0 flex-1 items-center gap-3"
         >
           <div className="size-10 shrink-0 overflow-hidden rounded-xl">
-            <Photo listing={l} className="size-full" />
+            <Photo listing={l} className="size-full" thumb />
           </div>
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold">{l.sublessor.name}</p>
@@ -199,6 +199,8 @@ function ChatThread({ thread }: { thread: Thread }) {
         onShare={() => shareContact(thread.id)}
         myEmail={user?.email ?? ""}
       />
+
+      <p className="border-b border-border px-4 py-2 text-center text-xs text-muted-foreground">{COPY.empty.retention}</p>
 
       <div className="flex-1 space-y-2 overflow-y-auto px-4 py-4">
         {thread.messages.length === 0 && (
