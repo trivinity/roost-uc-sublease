@@ -5,7 +5,7 @@ import { fetchRating, type GoogleRating } from "@/lib/places";
 
 // Live star rating for the property management company, straight from Google (never stored on our side).
 // Google's terms: show "Google Maps" attribution and let people open the listing on Google Maps.
-export function GoogleRatingCard({ placeId, fallbackName }: { placeId: string; fallbackName?: string }) {
+export function GoogleRatingCard({ placeId }: { placeId: string }) {
   const [state, setState] = useState<{ id: string; data: GoogleRating | null } | null>(null);
 
   useEffect(() => {
@@ -20,7 +20,7 @@ export function GoogleRatingCard({ placeId, fallbackName }: { placeId: string; f
 
   const loading = state?.id !== placeId;
   const data = loading ? null : state?.data;
-  const name = data?.name || fallbackName || "Property management company";
+  const name = data?.name || "Property management company";
 
   return (
     <div className="flex items-center justify-between gap-3 rounded-3xl border border-border bg-card p-4 text-sm">

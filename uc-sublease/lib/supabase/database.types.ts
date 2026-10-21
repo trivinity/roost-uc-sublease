@@ -36,7 +36,6 @@ export type Database = {
           lng: number;
           owner_id: string | null;
           photos: string[];
-          property_group: string | null;
           property_reviews: Json | null;
           rent: number;
           start_date: string;
@@ -71,7 +70,6 @@ export type Database = {
           lng: number;
           owner_id?: string | null;
           photos?: string[];
-          property_group?: string | null;
           property_reviews?: Json | null;
           rent: number;
           start_date: string;
@@ -106,7 +104,6 @@ export type Database = {
           lng?: number;
           owner_id?: string | null;
           photos?: string[];
-          property_group?: string | null;
           property_reviews?: Json | null;
           rent?: number;
           start_date?: string;
@@ -154,6 +151,12 @@ export type Database = {
         Row: { created_at: string; display_name: string; email: string; id: string; onboarded: boolean; prefs: Json | null; prefs_asked: boolean };
         Insert: { created_at?: string; display_name: string; email: string; id: string; onboarded?: boolean; prefs?: Json | null; prefs_asked?: boolean };
         Update: { created_at?: string; display_name?: string; email?: string; id?: string; onboarded?: boolean; prefs?: Json | null; prefs_asked?: boolean };
+        Relationships: [];
+      };
+      property_groups: {
+        Row: { created_at: string; google_place_id: string; id: string; kind: string; name: string; sort: number };
+        Insert: { created_at?: string; google_place_id: string; id?: string; kind: string; name: string; sort?: number };
+        Update: { created_at?: string; google_place_id?: string; id?: string; kind?: string; name?: string; sort?: number };
         Relationships: [];
       };
       reports: {

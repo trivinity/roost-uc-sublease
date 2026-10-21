@@ -158,7 +158,6 @@ export default function PostPage() {
     feeSplitPct: subletterPct,
     household: unitType === "room" ? household : undefined,
     googlePlaceId: company?.id,
-    propertyGroup: company?.name,
     landlordConsent: true,
     confirmedDaysAgo: 0,
     photos: uploads.length

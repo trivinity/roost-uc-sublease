@@ -328,7 +328,7 @@ export default function ListingPage() {
         <GettingAround listing={l} />
         <RoommateFit listing={l} />
         {l.googlePlaceId ? (
-          <GoogleRatingCard placeId={l.googlePlaceId} fallbackName={l.propertyGroup} />
+          <GoogleRatingCard placeId={l.googlePlaceId} />
         ) : (
           l.propertyReviews && (
             <div className="flex items-center justify-between gap-3 rounded-3xl border border-border bg-card p-4 text-sm">
